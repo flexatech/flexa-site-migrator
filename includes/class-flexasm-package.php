@@ -58,7 +58,7 @@ class Package {
 			'id'          => $this->id,
 			'site_url'    => get_site_url(),
 			'home_url'    => get_home_url(),
-			'abspath'     => str_replace( '\\', '/', ABSPATH ),
+			'abspath'     => str_replace( '\\', '/', ABSPATH ), // WP install root, recorded in the manifest so the importer can search-replace absolute paths. No WP function returns it.
 			'prefix'      => $GLOBALS['wpdb']->prefix,
 			'tables'      => $tables,
 			'file_total'  => $file_count,

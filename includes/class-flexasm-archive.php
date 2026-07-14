@@ -30,6 +30,7 @@ class Archive {
 	public function __construct( $dir, $list_file ) {
 		$this->dir       = rtrim( $dir, '/\\' );
 		$this->list_file = $list_file;
+		// ABSPATH is the WP install root — the base the archive walks to package the whole site. No WP function returns the install root.
 		$this->root      = rtrim( ABSPATH, '/\\' );
 	}
 

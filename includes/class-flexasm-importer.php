@@ -110,13 +110,14 @@ class Importer {
 		$old_home = rtrim( $this->manifest['home_url'], '/' );
 		$old_path = rtrim( str_replace( '\\', '/', $this->manifest['abspath'] ), '/' ) . '/';
 		$new_url  = rtrim( get_site_url(), '/' );
+		// ABSPATH is this (staging) install's root — the search-replace target for the source's recorded abspath. No WP function returns the install root.
 		$new_path = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/';
 
 		// Set up the runner (chunked DB) — hashed token + state, no DB password stored.
 		$runner_url = null;
 		$token      = bin2hex( random_bytes( 32 ) );
 		$state = array(
-			'abspath'     => str_replace( '\\', '/', ABSPATH ),
+			'abspath'     => str_replace( '\\', '/', ABSPATH ), // WP install root, recorded so the chunked runner can search-replace paths. No WP function returns it.
 			'prod_prefix' => $this->manifest['prefix'],
 			'stag_prefix' => $wpdb->prefix,
 			'old_url'     => $old_url,
@@ -184,13 +185,13 @@ class Importer {
 				continue;
 			}
 			if ( substr( $name, -1 ) === '/' ) {
-				wp_mkdir_p( ABSPATH . $name );
+				wp_mkdir_p( ABSPATH . $name ); // ABSPATH is the WP install root; a full-site restore extracts files back into it. No WP function returns the install root.
 				continue;
 			}
 			$names[] = $name;
 		}
 		if ( $names ) {
-			$zip->extractTo( ABSPATH, $names );
+			$zip->extractTo( ABSPATH, $names ); // Extract into the WP install root (ABSPATH) — the destination of a full-site restore.
 		}
 		$zip->close();
 
@@ -220,6 +221,7 @@ class Importer {
 		$old_home = rtrim( $this->manifest['home_url'], '/' );
 		$old_path = rtrim( str_replace( '\\', '/', $this->manifest['abspath'] ), '/' ) . '/';
 		$new_url  = rtrim( get_site_url(), '/' );
+		// ABSPATH is this install's root — the search-replace target for the source's recorded abspath. No WP function returns the install root.
 		$new_path = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/';
 
 		// 1) Import SQL (keep the production prefix).
@@ -318,6 +320,7 @@ class Importer {
 
 	/** Update the $table_prefix line in the staging wp-config.php. */
 	private function update_config_prefix( $prefix ) {
+		// ABSPATH is the WP install root; core locates wp-config.php this same way and no WP function returns the root.
 		$path = ABSPATH . 'wp-config.php';
 		if ( ! wp_is_writable( $path ) ) {
 			return false;

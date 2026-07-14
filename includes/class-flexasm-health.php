@@ -55,6 +55,7 @@ class Health {
 		);
 		$rows[] = array( __( 'max upload size', 'flexa-site-migrator' ), 'info', size_format( $upload ), __( 'Does not affect the "pull by link" flow', 'flexa-site-migrator' ) );
 
+		// ABSPATH is the WP install root; no WP function returns it, and core locates wp-config.php this same way. Used here only to check writability.
 		$cfg = ABSPATH . 'wp-config.php';
 		$cw  = is_file( $cfg ) && wp_is_writable( $cfg );
 		$rows[] = array( __( 'wp-config.php is writable', 'flexa-site-migrator' ), $cw ? 'ok' : 'warn', $cw ? __( 'yes', 'flexa-site-migrator' ) : __( 'no', 'flexa-site-migrator' ), __( 'Needed when changing the table prefix', 'flexa-site-migrator' ) );
@@ -103,7 +104,7 @@ class Health {
 			'info' => '#8c8f94',
 		);
 		?>
-		<details class="flexasm-card flexasm-health" <?php echo $fails ? 'open' : ''; ?>>
+		<details class="flexasm-card flexasm-health" <?php if ( $fails ) { echo 'open'; } ?>>
 			<summary style="cursor:pointer;font-weight:600;">
 				<?php esc_html_e( 'System check', 'flexa-site-migrator' ); ?>
 				<?php if ( $fails ) : ?>
