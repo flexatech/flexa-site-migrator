@@ -34,6 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			<label><input type="checkbox" id="flexasm-pull-confirm"> <?php esc_html_e( 'I understand staging will be completely overwritten.', 'flexa-site-migrator' ); ?></label>
 		</p>
 		<button id="flexasm-pull-start" class="button button-primary button-hero" disabled><?php esc_html_e( 'Pull &amp; Migrate', 'flexa-site-migrator' ); ?></button>
+		<span id="flexasm-pull-spin" class="flexasm-spinner" style="display:none;" aria-hidden="true"></span>
 	</div>
 
 	<div class="flexasm-card">

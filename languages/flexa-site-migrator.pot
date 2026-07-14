@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-13T15:19:39+00:00\n"
+"POT-Creation-Date: 2026-07-14T02:10:37+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: flexa-site-migrator\n"
@@ -29,6 +29,41 @@ msgstr ""
 #. Author of the plugin
 #: flexa-site-migrator.php
 msgid "flexatech"
+msgstr ""
+
+#: flexa-site-migrator.php:77
+msgid "Flexa Site Migrator – Import"
+msgstr ""
+
+#: flexa-site-migrator.php:78
+msgid "Flexa Site Migrator Import"
+msgstr ""
+
+#: flexa-site-migrator.php:88
+msgid "Backup"
+msgstr ""
+
+#: flexa-site-migrator.php:89
+msgid "Restore"
+msgstr ""
+
+#: flexa-site-migrator.php:121
+msgid "Permission denied."
+msgstr ""
+
+#: flexa-site-migrator.php:223
+#: flexa-site-migrator.php:247
+msgid "Invalid package."
+msgstr ""
+
+#: flexa-site-migrator.php:227
+msgid "Installer not found."
+msgstr ""
+
+#: flexa-site-migrator.php:251
+#: includes/class-flexasm-package.php:37
+#: includes/class-flexasm-package.php:284
+msgid "Package not found."
 msgstr ""
 
 #: includes/class-flexasm-archive.php:44
@@ -205,12 +240,6 @@ msgstr ""
 msgid "Could not read database.sql."
 msgstr ""
 
-#: includes/class-flexasm-package.php:37
-#: includes/class-flexasm-package.php:284
-#: flexa-site-migrator.php:251
-msgid "Package not found."
-msgstr ""
-
 #: includes/class-flexasm-pull.php:33
 msgid "Invalid ID."
 msgstr ""
@@ -311,35 +340,6 @@ msgstr ""
 
 #: includes/class-flexasm-pull.php:336
 msgid "Could not write the local file."
-msgstr ""
-
-#: flexa-site-migrator.php:77
-msgid "Flexa Site Migrator – Import"
-msgstr ""
-
-#: flexa-site-migrator.php:78
-msgid "Flexa Site Migrator Import"
-msgstr ""
-
-#: flexa-site-migrator.php:88
-msgid "Backup"
-msgstr ""
-
-#: flexa-site-migrator.php:89
-msgid "Restore"
-msgstr ""
-
-#: flexa-site-migrator.php:121
-msgid "Permission denied."
-msgstr ""
-
-#: flexa-site-migrator.php:223
-#: flexa-site-migrator.php:247
-msgid "Invalid package."
-msgstr ""
-
-#: flexa-site-migrator.php:227
-msgid "Installer not found."
 msgstr ""
 
 #: templates/admin-page.php:10

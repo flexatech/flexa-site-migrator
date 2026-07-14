@@ -222,6 +222,8 @@
 		$('#flexasm-imp-progress').hide();
 		$('#flexasm-imp-error').show().find('p').text(msg || __('An error occurred.', 'flexa-site-migrator'));
 		$('#flexasm-run-import').prop('disabled', false);
+		$('#flexasm-pull-start').prop('disabled', false);
+		$('#flexasm-pull-spin').hide();
 	}
 
 	$('#flexasm-confirm').on('change', function () {
@@ -300,6 +302,7 @@
 		impPassword = $('#flexasm-pull-password').val();
 		impLink = link;
 		$(this).prop('disabled', true);
+		$('#flexasm-pull-spin').show();
 		impStart();
 		$('.flexasm-step[data-step="download"]').show();
 		impStatus(__('Fetching package info from production…', 'flexa-site-migrator'));
@@ -466,6 +469,7 @@
 	function showImportDone(r) {
 		impBar('db', 100);
 		$('#flexasm-imp-progress').hide();
+		$('#flexasm-pull-spin').hide();
 		var log = sprintf(
 			/* translators: 1: number of SQL statements, 2: number of updated data cells. */
 			__('Imported %1$d statements, updated %2$d data cells.', 'flexa-site-migrator'),
