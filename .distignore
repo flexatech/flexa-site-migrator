@@ -25,6 +25,7 @@
 /CHANGELOG.md
 /CONTRIBUTING.md
 /CLAUDE.md
+/reviewer-feedback.md
 **/*.map
 **/*.log
 **/.DS_Store

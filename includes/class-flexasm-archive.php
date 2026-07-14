@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -19,7 +19,7 @@ class Archive {
 
 	private $skip_dirs = array(
 		'wp-content/cache',
-		'wp-content/sd-packages',
+		'wp-content/flexasm-packages',
 		'wp-content/uploads/backup',
 		'wp-content/upgrade',
 		'node_modules',
@@ -41,7 +41,7 @@ class Archive {
 	public function build_filelist() {
 		$fh = fopen( $this->list_file, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		if ( ! $fh ) {
-			throw new \Exception( esc_html__( 'Could not create the file list.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Could not create the file list.', 'flexa-site-migrator' ) );
 		}
 		$it = new \RecursiveIteratorIterator(
 			new \RecursiveDirectoryIterator( $this->root, \FilesystemIterator::SKIP_DOTS ),
@@ -91,7 +91,7 @@ class Archive {
 		$zip = new \ZipArchive();
 		if ( $zip->open( $pf, \ZipArchive::CREATE ) !== true ) {
 			/* translators: %s: zip archive file name */
-			throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'site-cloner' ), basename( $pf ) ) ) );
+			throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'flexa-site-migrator' ), basename( $pf ) ) ) );
 		}
 
 		$fh = fopen( $this->list_file, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.

@@ -1,7 +1,7 @@
 <?php
-namespace Flexa\SiteCloner\Tests;
+namespace Flexa\SiteMigrator\Tests;
 
-use Flexa\SiteCloner\Zip_Stream;
+use Flexa\SiteMigrator\Zip_Stream;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -14,7 +14,7 @@ final class ZipStreamTest extends TestCase {
 	private $dir;
 
 	protected function setUp(): void {
-		$this->dir = sys_get_temp_dir() . '/sd-ziptest-' . uniqid();
+		$this->dir = sys_get_temp_dir() . '/flexasm-ziptest-' . uniqid();
 		mkdir( $this->dir, 0777, true );
 	}
 

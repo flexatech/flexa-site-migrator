@@ -5,115 +5,115 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 // scans the file in isolation, so silence its false positives file-wide.
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 ?>
-<div class="wrap sd-wrap">
-	<h1>Site Cloner</h1>
-	<p class="description"><?php esc_html_e( 'Create a package to migrate this site to staging. Includes', 'site-cloner' ); ?> <code>files + database + installer</code>.</p>
+<div class="wrap flexasm-wrap">
+	<h1>Flexa Site Migrator</h1>
+	<p class="description"><?php esc_html_e( 'Create a package to migrate this site to staging. Includes', 'flexa-site-migrator' ); ?> <code>files + database + installer</code>.</p>
 
-	<?php \Flexa\SiteCloner\Health::render(); ?>
+	<?php \Flexa\SiteMigrator\Health::render(); ?>
 
-	<div class="sd-card">
+	<div class="flexasm-card">
 		<p style="margin-top:0;">
-			<label for="sd-build-pass"><?php esc_html_e( 'Protection password (optional):', 'site-cloner' ); ?></label><br>
-			<input type="text" id="sd-build-pass" class="regular-text" placeholder="<?php esc_attr_e( 'Leave empty if not needed', 'site-cloner' ); ?>" autocomplete="off">
-			<span class="description"><?php esc_html_e( "If set, the staging side must enter this password to pull the package (send it to them through a private channel, don't include it in the link).", 'site-cloner' ); ?></span>
+			<label for="flexasm-build-pass"><?php esc_html_e( 'Protection password (optional):', 'flexa-site-migrator' ); ?></label><br>
+			<input type="text" id="flexasm-build-pass" class="regular-text" placeholder="<?php esc_attr_e( 'Leave empty if not needed', 'flexa-site-migrator' ); ?>" autocomplete="off">
+			<span class="description"><?php esc_html_e( "If set, the staging side must enter this password to pull the package (send it to them through a private channel, don't include it in the link).", 'flexa-site-migrator' ); ?></span>
 		</p>
 		<p>
-			<label for="sd-build-ips"><?php esc_html_e( 'IP restriction (optional):', 'site-cloner' ); ?></label><br>
-			<input type="text" id="sd-build-ips" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. 203.0.113.5, 203.0.113.6', 'site-cloner' ); ?>" autocomplete="off">
-			<span class="description"><?php esc_html_e( "Only these IPs can pull the package. Leave empty = no restriction. Don't know the destination server's IP yet? Leave it empty, click Test connection on the destination side, and it will report the IP for you to add here.", 'site-cloner' ); ?></span>
+			<label for="flexasm-build-ips"><?php esc_html_e( 'IP restriction (optional):', 'flexa-site-migrator' ); ?></label><br>
+			<input type="text" id="flexasm-build-ips" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. 203.0.113.5, 203.0.113.6', 'flexa-site-migrator' ); ?>" autocomplete="off">
+			<span class="description"><?php esc_html_e( "Only these IPs can pull the package. Leave empty = no restriction. Don't know the destination server's IP yet? Leave it empty, click Test connection on the destination side, and it will report the IP for you to add here.", 'flexa-site-migrator' ); ?></span>
 		</p>
-		<button id="sd-build" class="button button-primary button-hero"><?php esc_html_e( 'Create Package', 'site-cloner' ); ?></button>
-		<span id="sd-build-spin" class="sd-spinner" style="display:none;" aria-hidden="true"></span>
+		<button id="flexasm-build" class="button button-primary button-hero"><?php esc_html_e( 'Create Package', 'flexa-site-migrator' ); ?></button>
+		<span id="flexasm-build-spin" class="flexasm-spinner" style="display:none;" aria-hidden="true"></span>
 
-		<div id="sd-progress" class="sd-progress" style="display:none;">
-			<div class="sd-step" data-step="db">
-				<span class="sd-label"><?php esc_html_e( 'Database', 'site-cloner' ); ?></span>
-				<div class="sd-bar"><i style="width:0%"></i></div>
+		<div id="flexasm-progress" class="flexasm-progress" style="display:none;">
+			<div class="flexasm-step" data-step="db">
+				<span class="flexasm-label"><?php esc_html_e( 'Database', 'flexa-site-migrator' ); ?></span>
+				<div class="flexasm-bar"><i style="width:0%"></i></div>
 			</div>
-			<div class="sd-step" data-step="files">
-				<span class="sd-label"><?php esc_html_e( 'Files', 'site-cloner' ); ?></span>
-				<div class="sd-bar"><i style="width:0%"></i></div>
+			<div class="flexasm-step" data-step="files">
+				<span class="flexasm-label"><?php esc_html_e( 'Files', 'flexa-site-migrator' ); ?></span>
+				<div class="flexasm-bar"><i style="width:0%"></i></div>
 			</div>
-			<p class="sd-status"><?php esc_html_e( 'Initializing…', 'site-cloner' ); ?></p>
+			<p class="flexasm-status"><?php esc_html_e( 'Initializing…', 'flexa-site-migrator' ); ?></p>
 		</div>
 
-		<div id="sd-result" class="sd-result" style="display:none;">
-			<h2>✅ <?php esc_html_e( 'Package is ready', 'site-cloner' ); ?></h2>
+		<div id="flexasm-result" class="flexasm-result" style="display:none;">
+			<h2>✅ <?php esc_html_e( 'Package is ready', 'flexa-site-migrator' ); ?></h2>
 
-			<div class="sd-pull-box">
-				<strong>⚡ <?php esc_html_e( 'Fastest way — no upload/download needed:', 'site-cloner' ); ?></strong>
-				<p><?php esc_html_e( 'Install this plugin on staging, go to', 'site-cloner' ); ?> <em>Tools → Site Cloner Import</em>, <?php esc_html_e( 'paste the link below and click run:', 'site-cloner' ); ?></p>
-				<div class="sd-pull-row">
-					<input type="text" id="sd-pull-link" readonly>
-					<button type="button" id="sd-pull-copy" class="button"><?php esc_html_e( 'Copy', 'site-cloner' ); ?></button>
+			<div class="flexasm-pull-box">
+				<strong>⚡ <?php esc_html_e( 'Fastest way — no upload/download needed:', 'flexa-site-migrator' ); ?></strong>
+				<p><?php esc_html_e( 'Install this plugin on staging, go to', 'flexa-site-migrator' ); ?> <em>Tools → Flexa Site Migrator Import</em>, <?php esc_html_e( 'paste the link below and click run:', 'flexa-site-migrator' ); ?></p>
+				<div class="flexasm-pull-row">
+					<input type="text" id="flexasm-pull-link" readonly>
+					<button type="button" id="flexasm-pull-copy" class="button"><?php esc_html_e( 'Copy', 'flexa-site-migrator' ); ?></button>
 				</div>
-				<p class="description"><?php esc_html_e( 'The link contains a token that grants access to the package. Only share it with people you trust; delete the package after the migration is done.', 'site-cloner' ); ?></p>
+				<p class="description"><?php esc_html_e( 'The link contains a token that grants access to the package. Only share it with people you trust; delete the package after the migration is done.', 'flexa-site-migrator' ); ?></p>
 			</div>
 
-			<details class="sd-manual">
-				<summary><?php esc_html_e( "Or download the files manually (empty staging / can't connect)", 'site-cloner' ); ?></summary>
+			<details class="flexasm-manual">
+				<summary><?php esc_html_e( "Or download the files manually (empty staging / can't connect)", 'flexa-site-migrator' ); ?></summary>
 				<p>
-					<a id="sd-dl-package" class="button button-primary" href="#" download>⬇ <?php esc_html_e( 'Download the whole package (.zip)', 'site-cloner' ); ?></a>
-					<button type="button" id="sd-dl-all" class="button"><?php esc_html_e( 'Download files separately', 'site-cloner' ); ?></button>
+					<a id="flexasm-dl-package" class="button button-primary" href="#" download>⬇ <?php esc_html_e( 'Download the whole package (.zip)', 'flexa-site-migrator' ); ?></a>
+					<button type="button" id="flexasm-dl-all" class="button"><?php esc_html_e( 'Download files separately', 'flexa-site-migrator' ); ?></button>
 				</p>
-				<p class="description"><?php esc_html_e( 'The single .zip bundles every file; unzip it on staging, then run', 'site-cloner' ); ?> <code>installer.php</code>.</p>
-				<ul class="sd-files"></ul>
+				<p class="description"><?php esc_html_e( 'The single .zip bundles every file; unzip it on staging, then run', 'flexa-site-migrator' ); ?> <code>installer.php</code>.</p>
+				<ul class="flexasm-files"></ul>
 			</details>
 		</div>
 
-		<div id="sd-error" class="notice notice-error" style="display:none;"><p></p></div>
+		<div id="flexasm-error" class="notice notice-error" style="display:none;"><p></p></div>
 	</div>
 
 	<?php if ( ! empty( $packages ) ) : ?>
-	<div class="sd-card sd-existing">
-		<h2 style="margin-top:0;"><?php esc_html_e( 'Packages on this site', 'site-cloner' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Previously created packages are kept on disk, so you can download the files again or get a fresh pull link after reloading this page.', 'site-cloner' ); ?></p>
+	<div class="flexasm-card flexasm-existing">
+		<h2 style="margin-top:0;"><?php esc_html_e( 'Packages on this site', 'flexa-site-migrator' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Previously created packages are kept on disk, so you can download the files again or get a fresh pull link after reloading this page.', 'flexa-site-migrator' ); ?></p>
 
-		<?php foreach ( $packages as $sd_pkg ) : ?>
-			<div class="sd-pkg" data-id="<?php echo esc_attr( $sd_pkg['id'] ); ?>">
-				<div class="sd-pkg-head">
-					<code><?php echo esc_html( $sd_pkg['id'] ); ?></code>
-					<span class="description"><?php echo esc_html( trim( $sd_pkg['site_url'] . ' · ' . $sd_pkg['created'] . ' · ' . $sd_pkg['size'], ' ·' ) ); ?></span>
+		<?php foreach ( $packages as $flexasm_pkg ) : ?>
+			<div class="flexasm-pkg" data-id="<?php echo esc_attr( $flexasm_pkg['id'] ); ?>">
+				<div class="flexasm-pkg-head">
+					<code><?php echo esc_html( $flexasm_pkg['id'] ); ?></code>
+					<span class="description"><?php echo esc_html( trim( $flexasm_pkg['site_url'] . ' · ' . $flexasm_pkg['created'] . ' · ' . $flexasm_pkg['size'], ' ·' ) ); ?></span>
 				</div>
 
-				<p class="sd-pkg-actions">
-					<?php if ( ! empty( $sd_pkg['files']['package'] ) ) : ?>
-						<a class="button button-primary sd-pkg-dlpackage" href="<?php echo esc_url( $sd_pkg['files']['package'] ); ?>" download>⬇ <?php esc_html_e( 'Download package (.zip)', 'site-cloner' ); ?></a>
+				<p class="flexasm-pkg-actions">
+					<?php if ( ! empty( $flexasm_pkg['files']['package'] ) ) : ?>
+						<a class="button button-primary flexasm-pkg-dlpackage" href="<?php echo esc_url( $flexasm_pkg['files']['package'] ); ?>" download>⬇ <?php esc_html_e( 'Download package (.zip)', 'flexa-site-migrator' ); ?></a>
 					<?php endif; ?>
-					<button type="button" class="button sd-pkg-dlall"><?php esc_html_e( 'Download files separately', 'site-cloner' ); ?></button>
-					<?php if ( $sd_pkg['has_token'] ) : ?>
-						<button type="button" class="button sd-pkg-link"><?php esc_html_e( 'Get pull link', 'site-cloner' ); ?></button>
+					<button type="button" class="button flexasm-pkg-dlall"><?php esc_html_e( 'Download files separately', 'flexa-site-migrator' ); ?></button>
+					<?php if ( $flexasm_pkg['has_token'] ) : ?>
+						<button type="button" class="button flexasm-pkg-link"><?php esc_html_e( 'Get pull link', 'flexa-site-migrator' ); ?></button>
 					<?php endif; ?>
-					<button type="button" class="button sd-pkg-delete"><?php esc_html_e( 'Delete', 'site-cloner' ); ?></button>
-					<?php if ( $sd_pkg['has_pass'] ) : ?>
-						<span class="description">🔒 <?php esc_html_e( 'password-protected', 'site-cloner' ); ?></span>
+					<button type="button" class="button flexasm-pkg-delete"><?php esc_html_e( 'Delete', 'flexa-site-migrator' ); ?></button>
+					<?php if ( $flexasm_pkg['has_pass'] ) : ?>
+						<span class="description">🔒 <?php esc_html_e( 'password-protected', 'flexa-site-migrator' ); ?></span>
 					<?php endif; ?>
 				</p>
 
-				<div class="sd-pkg-linkrow sd-pull-row" style="display:none;">
-					<input type="text" class="sd-pkg-linkinput" readonly>
-					<button type="button" class="button sd-pkg-linkcopy"><?php esc_html_e( 'Copy', 'site-cloner' ); ?></button>
+				<div class="flexasm-pkg-linkrow flexasm-pull-row" style="display:none;">
+					<input type="text" class="flexasm-pkg-linkinput" readonly>
+					<button type="button" class="button flexasm-pkg-linkcopy"><?php esc_html_e( 'Copy', 'flexa-site-migrator' ); ?></button>
 				</div>
-				<p class="description sd-pkg-linknote" style="display:none;"><?php esc_html_e( 'A brand-new link was generated (valid 48h). Any link shared earlier for this package no longer works.', 'site-cloner' ); ?></p>
+				<p class="description flexasm-pkg-linknote" style="display:none;"><?php esc_html_e( 'A brand-new link was generated (valid 48h). Any link shared earlier for this package no longer works.', 'flexa-site-migrator' ); ?></p>
 
-				<ul class="sd-files sd-pkg-files">
+				<ul class="flexasm-files flexasm-pkg-files">
 					<?php
-					$sd_f = $sd_pkg['files'];
-					if ( ! empty( $sd_f['installer'] ) ) {
-						printf( '<li><a href="%s" download="installer.php">⬇ installer.php</a></li>', esc_url( $sd_f['installer'] ) );
+					$flexasm_f = $flexasm_pkg['files'];
+					if ( ! empty( $flexasm_f['installer'] ) ) {
+						printf( '<li><a href="%s" download="installer.php">⬇ installer.php</a></li>', esc_url( $flexasm_f['installer'] ) );
 					}
-					foreach ( $sd_f['archives'] as $sd_az ) {
+					foreach ( $flexasm_f['archives'] as $flexasm_az ) {
 						printf(
 							'<li><a href="%1$s" download>⬇ %2$s</a></li>',
-							esc_url( $sd_az ),
-							esc_html( basename( $sd_az ) )
+							esc_url( $flexasm_az ),
+							esc_html( basename( $flexasm_az ) )
 						);
 					}
-					if ( ! empty( $sd_f['database'] ) ) {
-						printf( '<li><a href="%s" download>⬇ database.sql</a></li>', esc_url( $sd_f['database'] ) );
+					if ( ! empty( $flexasm_f['database'] ) ) {
+						printf( '<li><a href="%s" download>⬇ database.sql</a></li>', esc_url( $flexasm_f['database'] ) );
 					}
-					if ( ! empty( $sd_f['manifest'] ) ) {
-						printf( '<li><a href="%s" download>⬇ manifest.json</a></li>', esc_url( $sd_f['manifest'] ) );
+					if ( ! empty( $flexasm_f['manifest'] ) ) {
+						printf( '<li><a href="%s" download>⬇ manifest.json</a></li>', esc_url( $flexasm_f['manifest'] ) );
 					}
 					?>
 				</ul>

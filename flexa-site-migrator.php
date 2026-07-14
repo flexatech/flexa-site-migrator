@@ -1,37 +1,37 @@
 <?php
 /**
- * Plugin Name: Site Cloner
+ * Plugin Name: Flexa Site Migrator
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.1
+ * Version:     1.0.2
  * Author:      flexatech
  * License:     GPL-2.0+
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: site-cloner
+ * Text Domain: flexa-site-migrator
  * Domain Path: /languages
  */
 
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXA_VERSION', '1.0.1' );
-define( 'FLEXA_PATH', plugin_dir_path( __FILE__ ) );
-define( 'FLEXA_URL', plugin_dir_url( __FILE__ ) );
+define( 'FLEXASM_VERSION', '1.0.2' );
+define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
+define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
-// Package storage directory: <uploads>/sd-packages (resolved via wp_upload_dir()).
-define( 'FLEXA_PACKAGE_DIR', wp_upload_dir()['basedir'] . '/sd-packages' );
-define( 'FLEXA_PACKAGE_URL', wp_upload_dir()['baseurl'] . '/sd-packages' );
+// Package storage directory: <uploads>/flexasm-packages (resolved via wp_upload_dir()).
+define( 'FLEXASM_PACKAGE_DIR', wp_upload_dir()['basedir'] . '/flexasm-packages' );
+define( 'FLEXASM_PACKAGE_URL', wp_upload_dir()['baseurl'] . '/flexasm-packages' );
 
-require_once FLEXA_PATH . 'includes/class-sd-database.php';
-require_once FLEXA_PATH . 'includes/class-sd-archive.php';
-require_once FLEXA_PATH . 'includes/class-sd-zipstream.php';
-require_once FLEXA_PATH . 'includes/class-sd-package.php';
-require_once FLEXA_PATH . 'includes/class-sd-replace.php';
-require_once FLEXA_PATH . 'includes/class-sd-importer.php';
-require_once FLEXA_PATH . 'includes/class-sd-pull.php';
-require_once FLEXA_PATH . 'includes/class-sd-health.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-database.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-archive.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-zipstream.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-package.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-replace.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-importer.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-pull.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-health.php';
 
 class Plugin {
 
@@ -41,43 +41,43 @@ class Plugin {
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'action_links' ) );
 
 		// Build steps run via AJAX (split into chunks to avoid timeouts).
-		add_action( 'wp_ajax_sd_build_init',     array( $this, 'ajax_init' ) );
-		add_action( 'wp_ajax_sd_build_database', array( $this, 'ajax_database' ) );
-		add_action( 'wp_ajax_sd_build_files',    array( $this, 'ajax_files' ) );
-		add_action( 'wp_ajax_sd_build_finalize', array( $this, 'ajax_finalize' ) );
+		add_action( 'wp_ajax_flexasm_build_init',     array( $this, 'ajax_init' ) );
+		add_action( 'wp_ajax_flexasm_build_database', array( $this, 'ajax_database' ) );
+		add_action( 'wp_ajax_flexasm_build_files',    array( $this, 'ajax_files' ) );
+		add_action( 'wp_ajax_flexasm_build_finalize', array( $this, 'ajax_finalize' ) );
 
 		// Manage packages already built on this site (re-shown after a reload).
-		add_action( 'wp_ajax_sd_regen_link', array( $this, 'ajax_regen_link' ) );
-		add_action( 'wp_ajax_sd_delete_pkg', array( $this, 'ajax_delete_pkg' ) );
-		add_action( 'wp_ajax_sd_installer',  array( $this, 'ajax_installer' ) );
-		add_action( 'wp_ajax_sd_package_zip', array( $this, 'ajax_download_package' ) );
+		add_action( 'wp_ajax_flexasm_regen_link', array( $this, 'ajax_regen_link' ) );
+		add_action( 'wp_ajax_flexasm_delete_pkg', array( $this, 'ajax_delete_pkg' ) );
+		add_action( 'wp_ajax_flexasm_installer',  array( $this, 'ajax_installer' ) );
+		add_action( 'wp_ajax_flexasm_package_zip', array( $this, 'ajax_download_package' ) );
 
 		// Import on the staging side.
-		add_action( 'wp_ajax_sd_import_prepare', array( $this, 'ajax_import_prepare' ) );
-		add_action( 'wp_ajax_sd_import_extract', array( $this, 'ajax_import_extract' ) );
-		add_action( 'wp_ajax_sd_import_deploy',  array( $this, 'ajax_import_deploy' ) );
+		add_action( 'wp_ajax_flexasm_import_prepare', array( $this, 'ajax_import_prepare' ) );
+		add_action( 'wp_ajax_flexasm_import_extract', array( $this, 'ajax_import_extract' ) );
+		add_action( 'wp_ajax_flexasm_import_deploy',  array( $this, 'ajax_import_deploy' ) );
 
 		// Pull-by-link.
 		add_action( 'init', array( Pull::class, 'handle' ) ); // production serves the files
-		add_action( 'wp_ajax_sd_pull_info',     array( $this, 'ajax_pull_info' ) );
-		add_action( 'wp_ajax_sd_pull_download', array( $this, 'ajax_pull_download' ) );
-		add_action( 'wp_ajax_sd_pull_test',     array( $this, 'ajax_pull_test' ) );
-		add_action( 'wp_ajax_sd_pull_cleanup',  array( $this, 'ajax_pull_cleanup' ) );
+		add_action( 'wp_ajax_flexasm_pull_info',     array( $this, 'ajax_pull_info' ) );
+		add_action( 'wp_ajax_flexasm_pull_download', array( $this, 'ajax_pull_download' ) );
+		add_action( 'wp_ajax_flexasm_pull_test',     array( $this, 'ajax_pull_test' ) );
+		add_action( 'wp_ajax_flexasm_pull_cleanup',  array( $this, 'ajax_pull_cleanup' ) );
 	}
 
 	public function menu() {
 		add_management_page(
-			__( 'Site Cloner', 'site-cloner' ),
-			__( 'Site Cloner', 'site-cloner' ),
+			__( 'Flexa Site Migrator', 'flexa-site-migrator' ),
+			__( 'Flexa Site Migrator', 'flexa-site-migrator' ),
 			'manage_options',
-			'site-cloner',
+			'flexa-site-migrator',
 			array( $this, 'render_page' )
 		);
 		add_management_page(
-			__( 'Site Cloner – Import', 'site-cloner' ),
-			__( 'Site Cloner Import', 'site-cloner' ),
+			__( 'Flexa Site Migrator – Import', 'flexa-site-migrator' ),
+			__( 'Flexa Site Migrator Import', 'flexa-site-migrator' ),
 			'manage_options',
-			'sd-import',
+			'flexasm-import',
 			array( $this, 'render_import_page' )
 		);
 	}
@@ -85,44 +85,44 @@ class Plugin {
 	/** Quick links on the Plugins list row. */
 	public function action_links( $links ) {
 		$mine = array(
-			'<a href="' . esc_url( admin_url( 'tools.php?page=site-cloner' ) ) . '">' . esc_html__( 'Backup', 'site-cloner' ) . '</a>',
-			'<a href="' . esc_url( admin_url( 'tools.php?page=sd-import' ) ) . '">' . esc_html__( 'Restore', 'site-cloner' ) . '</a>',
+			'<a href="' . esc_url( admin_url( 'tools.php?page=flexa-site-migrator' ) ) . '">' . esc_html__( 'Backup', 'flexa-site-migrator' ) . '</a>',
+			'<a href="' . esc_url( admin_url( 'tools.php?page=flexasm-import' ) ) . '">' . esc_html__( 'Restore', 'flexa-site-migrator' ) . '</a>',
 		);
 		return array_merge( $mine, $links );
 	}
 
 	public function assets( $hook ) {
-		if ( ! in_array( $hook, array( 'tools_page_site-cloner', 'tools_page_sd-import' ), true ) ) {
+		if ( ! in_array( $hook, array( 'tools_page_flexa-site-migrator', 'tools_page_flexasm-import' ), true ) ) {
 			return;
 		}
-		wp_enqueue_style( 'sd-admin', FLEXA_URL . 'assets/admin.css', array(), FLEXA_VERSION );
-		wp_enqueue_script( 'sd-admin', FLEXA_URL . 'assets/admin.js', array( 'jquery', 'wp-i18n' ), FLEXA_VERSION, true );
-		wp_set_script_translations( 'sd-admin', 'site-cloner', FLEXA_PATH . 'languages' );
-		wp_localize_script( 'sd-admin', 'SD', array(
+		wp_enqueue_style( 'flexasm-admin', FLEXASM_URL . 'assets/admin.css', array(), FLEXASM_VERSION );
+		wp_enqueue_script( 'flexasm-admin', FLEXASM_URL . 'assets/admin.js', array( 'jquery', 'wp-i18n' ), FLEXASM_VERSION, true );
+		wp_set_script_translations( 'flexasm-admin', 'flexa-site-migrator', FLEXASM_PATH . 'languages' );
+		wp_localize_script( 'flexasm-admin', 'FLEXASM', array(
 			'ajax'  => admin_url( 'admin-ajax.php' ),
-			'nonce' => wp_create_nonce( 'sd_build' ),
+			'nonce' => wp_create_nonce( 'flexasm_build' ),
 		) );
 	}
 
 	public function render_page() {
 		$packages = Package::list_all();
-		require FLEXA_PATH . 'templates/admin-page.php';
+		require FLEXASM_PATH . 'templates/admin-page.php';
 	}
 
 	public function render_import_page() {
 		$packages = Importer::list_packages();
-		require FLEXA_PATH . 'templates/import-page.php';
+		require FLEXASM_PATH . 'templates/import-page.php';
 	}
 
 	/** ----- AJAX handlers ----- */
 
 	private function guard() {
-		if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'sd_build', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'site-cloner' ) ), 403 );
+		if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'flexasm_build', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'flexa-site-migrator' ) ), 403 );
 		}
 	}
 
-	// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Every AJAX handler below calls $this->guard() first, which runs check_ajax_referer( 'sd_build', 'nonce' ) and current_user_can( 'manage_options' ).
+	// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Every AJAX handler below calls $this->guard() first, which runs check_ajax_referer( 'flexasm_build', 'nonce' ) and current_user_can( 'manage_options' ).
 
 	/** Step 1: initialize the package, scan tables and the file list. */
 	public function ajax_init() {
@@ -220,11 +220,11 @@ class Plugin {
 		$this->guard();
 		$id = sanitize_text_field( wp_unslash( $_REQUEST['package'] ?? '' ) );
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			wp_die( esc_html__( 'Invalid package.', 'site-cloner' ), '', array( 'response' => 400 ) );
+			wp_die( esc_html__( 'Invalid package.', 'flexa-site-migrator' ), '', array( 'response' => 400 ) );
 		}
-		$file = FLEXA_PACKAGE_DIR . '/' . $id . '/installer.php';
+		$file = FLEXASM_PACKAGE_DIR . '/' . $id . '/installer.php';
 		if ( ! is_file( $file ) ) {
-			wp_die( esc_html__( 'Installer not found.', 'site-cloner' ), '', array( 'response' => 404 ) );
+			wp_die( esc_html__( 'Installer not found.', 'flexa-site-migrator' ), '', array( 'response' => 404 ) );
 		}
 		nocache_headers();
 		header( 'Content-Type: application/octet-stream' );
@@ -244,21 +244,21 @@ class Plugin {
 		$this->guard();
 		$id = sanitize_text_field( wp_unslash( $_REQUEST['package'] ?? '' ) );
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			wp_die( esc_html__( 'Invalid package.', 'site-cloner' ), '', array( 'response' => 400 ) );
+			wp_die( esc_html__( 'Invalid package.', 'flexa-site-migrator' ), '', array( 'response' => 400 ) );
 		}
-		$dir = FLEXA_PACKAGE_DIR . '/' . $id;
+		$dir = FLEXASM_PACKAGE_DIR . '/' . $id;
 		if ( ! is_dir( $dir ) ) {
-			wp_die( esc_html__( 'Package not found.', 'site-cloner' ), '', array( 'response' => 404 ) );
+			wp_die( esc_html__( 'Package not found.', 'flexa-site-migrator' ), '', array( 'response' => 404 ) );
 		}
 		// Ship the migration files only; skip internal token/state/hidden files.
-		$skip    = array( 'sd-state.json', 'sd-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess' );
+		$skip    = array( 'flexasm-state.json', 'flexasm-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess' );
 		$entries = array();
 		foreach ( glob( $dir . '/*' ) as $f ) {
 			if ( is_file( $f ) && ! in_array( basename( $f ), $skip, true ) ) {
 				$entries[] = array( 'path' => $f, 'name' => basename( $f ) );
 			}
 		}
-		Zip_Stream::stream( $entries, 'site-cloner-' . $id . '.zip' );
+		Zip_Stream::stream( $entries, 'flexa-site-migrator-' . $id . '.zip' );
 		exit;
 	}
 
@@ -353,8 +353,8 @@ new Plugin();
 
 // Protect the package directory with .htaccess + index on activation.
 register_activation_hook( __FILE__, function () {
-	if ( ! file_exists( FLEXA_PACKAGE_DIR ) ) {
-		wp_mkdir_p( FLEXA_PACKAGE_DIR );
+	if ( ! file_exists( FLEXASM_PACKAGE_DIR ) ) {
+		wp_mkdir_p( FLEXASM_PACKAGE_DIR );
 	}
-	file_put_contents( FLEXA_PACKAGE_DIR . '/index.php', "<?php // Silence is golden." );
+	file_put_contents( FLEXASM_PACKAGE_DIR . '/index.php', "<?php // Silence is golden." );
 } );

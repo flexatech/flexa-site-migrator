@@ -2,335 +2,343 @@
 # This file is distributed under the GPL-2.0+.
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Cloner 1.0.1\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/site-cloner\n"
+"Project-Id-Version: Flexa Site Migrator 1.0.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flexa-site-migrator\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-13T14:25:20+00:00\n"
+"POT-Creation-Date: 2026-07-13T15:19:39+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
-"X-Domain: site-cloner\n"
+"X-Domain: flexa-site-migrator\n"
 
 #. Plugin Name of the plugin
-#: site-cloner.php
-#: site-cloner.php:70
-#: site-cloner.php:71
-msgid "Site Cloner"
+#: flexa-site-migrator.php
+#: flexa-site-migrator.php:70
+#: flexa-site-migrator.php:71
+msgid "Flexa Site Migrator"
 msgstr ""
 
 #. Description of the plugin
-#: site-cloner.php
+#: flexa-site-migrator.php
 msgid "Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required."
 msgstr ""
 
 #. Author of the plugin
-#: site-cloner.php
+#: flexa-site-migrator.php
 msgid "flexatech"
 msgstr ""
 
-#: includes/class-sd-archive.php:44
+#: includes/class-flexasm-archive.php:44
 msgid "Could not create the file list."
 msgstr ""
 
 #. translators: %s: zip archive file name
 #. translators: %s: archive part file name
-#: includes/class-sd-archive.php:94
-#: includes/class-sd-importer.php:100
-#: includes/class-sd-importer.php:174
+#: includes/class-flexasm-archive.php:94
+#: includes/class-flexasm-importer.php:100
+#: includes/class-flexasm-importer.php:174
 msgid "Could not open %s"
 msgstr ""
 
-#: includes/class-sd-database.php:85
+#: includes/class-flexasm-database.php:85
 msgid "Could not write to the SQL file."
 msgstr ""
 
-#: includes/class-sd-health.php:20
+#: includes/class-flexasm-health.php:20
 msgid "PHP ≥ 7.4 is recommended"
 msgstr ""
 
-#: includes/class-sd-health.php:24
-#: includes/class-sd-health.php:27
-#: includes/class-sd-health.php:30
-#: includes/class-sd-health.php:33
-#: includes/class-sd-health.php:36
+#: includes/class-flexasm-health.php:24
+#: includes/class-flexasm-health.php:27
+#: includes/class-flexasm-health.php:30
+#: includes/class-flexasm-health.php:33
+#: includes/class-flexasm-health.php:36
 msgid "present"
 msgstr ""
 
-#: includes/class-sd-health.php:24
-#: includes/class-sd-health.php:27
-#: includes/class-sd-health.php:30
-#: includes/class-sd-health.php:33
-#: includes/class-sd-health.php:36
+#: includes/class-flexasm-health.php:24
+#: includes/class-flexasm-health.php:27
+#: includes/class-flexasm-health.php:30
+#: includes/class-flexasm-health.php:33
+#: includes/class-flexasm-health.php:36
 msgid "missing"
 msgstr ""
 
-#: includes/class-sd-health.php:24
+#: includes/class-flexasm-health.php:24
 msgid "Required to import the database"
 msgstr ""
 
-#: includes/class-sd-health.php:27
+#: includes/class-flexasm-health.php:27
 msgid "Required to compress/extract"
 msgstr ""
 
-#: includes/class-sd-health.php:30
+#: includes/class-flexasm-health.php:30
 msgid "Needed for \"Pull from production\""
 msgstr ""
 
-#: includes/class-sd-health.php:33
+#: includes/class-flexasm-health.php:33
 msgid "Needed for HTTPS"
 msgstr ""
 
-#: includes/class-sd-health.php:36
+#: includes/class-flexasm-health.php:36
 msgid "Generates security tokens"
 msgstr ""
 
-#: includes/class-sd-health.php:42
-msgid "sd-packages directory is writable"
+#: includes/class-flexasm-health.php:42
+msgid "flexasm-packages directory is writable"
 msgstr ""
 
-#: includes/class-sd-health.php:42
+#: includes/class-flexasm-health.php:42
 msgid "Where packages are stored/downloaded"
 msgstr ""
 
 #. translators: %d: max_execution_time in seconds
-#: includes/class-sd-health.php:46
+#: includes/class-flexasm-health.php:46
 msgid "%ds"
 msgstr ""
 
 #. translators: %d: max_execution_time in seconds
-#: includes/class-sd-health.php:46
+#: includes/class-flexasm-health.php:46
 msgid "0 (unlimited)"
 msgstr ""
 
 #. translators: %d: max_execution_time in seconds
-#: includes/class-sd-health.php:46
-msgid "A low value can time out during a single-pass import"
+#: includes/class-flexasm-health.php:46
+msgid "The plugin does not override this. A low value can cut short a single-pass import or a large package download — raise it in php.ini if needed."
 msgstr ""
 
-#: includes/class-sd-health.php:54
+#: includes/class-flexasm-health.php:50
+msgid "-1 (unlimited)"
+msgstr ""
+
+#: includes/class-flexasm-health.php:50
+msgid "The plugin does not raise this. 256M or more is recommended for a single-pass import — raise it in php.ini if needed."
+msgstr ""
+
+#: includes/class-flexasm-health.php:56
 msgid "max upload size"
 msgstr ""
 
-#: includes/class-sd-health.php:54
+#: includes/class-flexasm-health.php:56
 msgid "Does not affect the \"pull by link\" flow"
 msgstr ""
 
-#: includes/class-sd-health.php:58
+#: includes/class-flexasm-health.php:60
 msgid "wp-config.php is writable"
 msgstr ""
 
-#: includes/class-sd-health.php:58
-#: includes/class-sd-health.php:62
+#: includes/class-flexasm-health.php:60
+#: includes/class-flexasm-health.php:64
 msgid "yes"
 msgstr ""
 
-#: includes/class-sd-health.php:58
-#: includes/class-sd-health.php:62
+#: includes/class-flexasm-health.php:60
+#: includes/class-flexasm-health.php:64
 msgid "no"
 msgstr ""
 
-#: includes/class-sd-health.php:58
+#: includes/class-flexasm-health.php:60
 msgid "Needed when changing the table prefix"
 msgstr ""
 
-#: includes/class-sd-health.php:62
+#: includes/class-flexasm-health.php:64
 msgid "Optional — without it, export still runs via PHP"
 msgstr ""
 
-#: includes/class-sd-health.php:67
+#: includes/class-flexasm-health.php:69
 msgid "Free disk space"
 msgstr ""
 
-#: includes/class-sd-health.php:106
+#: includes/class-flexasm-health.php:108
 msgid "System check"
 msgstr ""
 
 #. translators: %d: number of items that need attention
-#: includes/class-sd-health.php:109
+#: includes/class-flexasm-health.php:111
 msgid "%d item needs attention"
 msgid_plural "%d items need attention"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-sd-health.php:111
+#: includes/class-flexasm-health.php:113
 msgid "OK"
 msgstr ""
 
-#: includes/class-sd-importer.php:66
-#: includes/class-sd-package.php:23
-#: includes/class-sd-package.php:226
+#: includes/class-flexasm-importer.php:66
+#: includes/class-flexasm-package.php:23
+#: includes/class-flexasm-package.php:226
 msgid "Invalid package ID."
 msgstr ""
 
-#: includes/class-sd-importer.php:71
+#: includes/class-flexasm-importer.php:71
 msgid "Could not read the package manifest."
 msgstr ""
 
 #. translators: %s: archive part file name
-#: includes/class-sd-importer.php:95
+#: includes/class-flexasm-importer.php:95
 msgid "Missing archive part: %s"
 msgstr ""
 
-#: includes/class-sd-importer.php:163
+#: includes/class-flexasm-importer.php:163
 msgid "Invalid archive part name."
 msgstr ""
 
 #. translators: %s: archive part file name
-#: includes/class-sd-importer.php:168
+#: includes/class-flexasm-importer.php:168
 msgid "Archive part not found: %s"
 msgstr ""
 
 #. translators: %s: table prefix
-#: includes/class-sd-importer.php:240
+#: includes/class-flexasm-importer.php:241
 msgid "Changed the table prefix in wp-config to \"%s\"."
 msgstr ""
 
 #. translators: %1$s: staging table prefix; %2$s: production table prefix; %3$s: production table prefix to set manually
-#: includes/class-sd-importer.php:242
+#: includes/class-flexasm-importer.php:243
 msgid "⚠️ Prefixes differ (%1$s → %2$s) but wp-config.php could NOT be written. Please set $table_prefix = '%3$s'; manually."
 msgstr ""
 
-#: includes/class-sd-importer.php:258
+#: includes/class-flexasm-importer.php:259
 msgid "Could not read database.sql."
 msgstr ""
 
-#: includes/class-sd-package.php:37
-#: includes/class-sd-package.php:284
-#: site-cloner.php:251
+#: includes/class-flexasm-package.php:37
+#: includes/class-flexasm-package.php:284
+#: flexa-site-migrator.php:251
 msgid "Package not found."
 msgstr ""
 
-#: includes/class-sd-pull.php:33
+#: includes/class-flexasm-pull.php:33
 msgid "Invalid ID."
 msgstr ""
 
-#: includes/class-sd-pull.php:38
+#: includes/class-flexasm-pull.php:38
 msgid "Package does not exist or sharing is not enabled."
 msgstr ""
 
-#: includes/class-sd-pull.php:41
+#: includes/class-flexasm-pull.php:41
 msgid "Invalid token."
 msgstr ""
 
-#: includes/class-sd-pull.php:47
+#: includes/class-flexasm-pull.php:47
 msgid "The link has expired — please create a new package on production."
 msgstr ""
 
-#: includes/class-sd-pull.php:55
-#: includes/class-sd-pull.php:238
+#: includes/class-flexasm-pull.php:55
+#: includes/class-flexasm-pull.php:238
 msgid "This package is password-protected — please enter the password."
 msgstr ""
 
-#: includes/class-sd-pull.php:58
+#: includes/class-flexasm-pull.php:58
 msgid "Incorrect password."
 msgstr ""
 
 #. translators: %s: calling IP address
-#: includes/class-sd-pull.php:68
+#: includes/class-flexasm-pull.php:68
 msgid "IP %s is not in the allowlist. Add this IP to the \"IP restriction\" field when creating the package on production."
 msgstr ""
 
-#: includes/class-sd-pull.php:100
+#: includes/class-flexasm-pull.php:100
 msgid "Invalid file."
 msgstr ""
 
-#: includes/class-sd-pull.php:105
+#: includes/class-flexasm-pull.php:105
 msgid "Invalid action."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-sd-pull.php:179
+#: includes/class-flexasm-pull.php:179
 msgid "SSL error while calling production (%s). If production is a local/self-signed site (.test, .local…), enable \"Skip SSL verification\" and try again."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-sd-pull.php:182
+#: includes/class-flexasm-pull.php:182
 msgid "Could not reach production: %s"
 msgstr ""
 
-#: includes/class-sd-pull.php:191
-msgid "Invalid link (missing http/https or the sd_pull parameter)."
+#: includes/class-flexasm-pull.php:191
+msgid "Invalid link (missing http/https or the flexasm_pull parameter)."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-sd-pull.php:207
+#: includes/class-flexasm-pull.php:207
 msgid "Still could not connect even with SSL verification off: %s"
 msgstr ""
 
-#: includes/class-sd-pull.php:231
+#: includes/class-flexasm-pull.php:231
 msgid "Connected, but the certificate is invalid (self-signed?). \"Skip SSL verification\" will be enabled automatically."
 msgstr ""
 
-#: includes/class-sd-pull.php:232
+#: includes/class-flexasm-pull.php:232
 msgid "Connection OK, token valid."
 msgstr ""
 
 #. translators: %s: error message returned by production
-#: includes/class-sd-pull.php:243
+#: includes/class-flexasm-pull.php:243
 msgid "Production returned an error: %s (check the token/link)."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-sd-pull.php:247
+#: includes/class-flexasm-pull.php:247
 msgid "HTTP %s — invalid response."
 msgstr ""
 
-#: includes/class-sd-pull.php:253
-#: includes/class-sd-pull.php:305
+#: includes/class-flexasm-pull.php:253
+#: includes/class-flexasm-pull.php:305
 msgid "Invalid link."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-sd-pull.php:264
+#: includes/class-flexasm-pull.php:264
 msgid "Production returned an error (%s). Check the link/token/password."
 msgstr ""
 
-#: includes/class-sd-pull.php:269
+#: includes/class-flexasm-pull.php:269
 msgid "Invalid package data."
 msgstr ""
 
-#: includes/class-sd-pull.php:309
+#: includes/class-flexasm-pull.php:309
 msgid "Invalid file name."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-sd-pull.php:327
+#: includes/class-flexasm-pull.php:327
 msgid "Production returned an error during download (%s)."
 msgstr ""
 
-#: includes/class-sd-pull.php:336
+#: includes/class-flexasm-pull.php:336
 msgid "Could not write the local file."
 msgstr ""
 
-#: site-cloner.php:77
-msgid "Site Cloner – Import"
+#: flexa-site-migrator.php:77
+msgid "Flexa Site Migrator – Import"
 msgstr ""
 
-#: site-cloner.php:78
-msgid "Site Cloner Import"
+#: flexa-site-migrator.php:78
+msgid "Flexa Site Migrator Import"
 msgstr ""
 
-#: site-cloner.php:88
+#: flexa-site-migrator.php:88
 msgid "Backup"
 msgstr ""
 
-#: site-cloner.php:89
+#: flexa-site-migrator.php:89
 msgid "Restore"
 msgstr ""
 
-#: site-cloner.php:121
+#: flexa-site-migrator.php:121
 msgid "Permission denied."
 msgstr ""
 
-#: site-cloner.php:223
-#: site-cloner.php:247
+#: flexa-site-migrator.php:223
+#: flexa-site-migrator.php:247
 msgid "Invalid package."
 msgstr ""
 
-#: site-cloner.php:227
+#: flexa-site-migrator.php:227
 msgid "Installer not found."
 msgstr ""
 
@@ -449,7 +457,7 @@ msgid "A brand-new link was generated (valid 48h). Any link shared earlier for t
 msgstr ""
 
 #: templates/import-page.php:10
-msgid "Site Cloner – Import (Staging)"
+msgid "Flexa Site Migrator – Import (Staging)"
 msgstr ""
 
 #: templates/import-page.php:13

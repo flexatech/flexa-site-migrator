@@ -1,10 +1,10 @@
-=== Site Cloner ===
+=== Flexa Site Migrator ===
 Contributors: flexatech
 Tags: migration, staging, clone, backup, duplicate
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 7.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Migrate WordPress from production to staging with no shell access. Creates a pac
 
 == Description ==
 
-Site Cloner migrates a WordPress site from **production to staging**. It builds a package made of one or more `archive-*.zip` files (site files, split automatically), a `database.sql` dump, and a standalone `installer.php`. It works whether staging is on the same server or a different one, and **requires no shell/SSH access** — everything runs through the WordPress admin over regular HTTP.
+Flexa Site Migrator migrates a WordPress site from **production to staging**. It builds a package made of one or more `archive-*.zip` files (site files, split automatically), a `database.sql` dump, and a standalone `installer.php`. It works whether staging is on the same server or a different one, and **requires no shell/SSH access** — everything runs through the WordPress admin over regular HTTP.
 
 **Key features**
 
@@ -24,18 +24,18 @@ Site Cloner migrates a WordPress site from **production to staging**. It builds 
 
 **Deployment methods**
 
-*Method A — Pull via link (simplest):* Install the plugin on both production and staging. Build the package on production, copy the link, paste it on staging under Tools → Site Cloner Import, and click Pull & Migrate. Staging downloads the files from production (byte-range supported) and runs extraction, DB import, and search-replace on its own.
+*Method A — Pull via link (simplest):* Install the plugin on both production and staging. Build the package on production, copy the link, paste it on staging under Tools → Flexa Site Migrator Import, and click Pull & Migrate. Staging downloads the files from production (byte-range supported) and runs extraction, DB import, and search-replace on its own.
 
-*Method B — wp-admin import:* Copy the package folder to staging's `wp-content/sd-packages/`, then run the migration from Tools → Site Cloner Import.
+*Method B — wp-admin import:* Copy the package folder to staging's `wp-content/flexasm-packages/`, then run the migration from Tools → Flexa Site Migrator Import.
 
 *Method C — Standalone installer:* For an empty staging site with no WordPress. Upload `installer.php` and the package files to the site root, open `installer.php` in a browser, enter the database details, and start the migration.
 
 == Installation ==
 
-1. Upload the `site-cloner` folder to `/wp-content/plugins/` on the **production** site (or install it through Plugins → Add New → Upload Plugin).
+1. Upload the `flexa-site-migrator` folder to `/wp-content/plugins/` on the **production** site (or install it through Plugins → Add New → Upload Plugin).
 2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Go to **Tools → Site Cloner** to build a package.
-4. To deploy via link or wp-admin import, install and activate the plugin on the **staging** site as well, then use **Tools → Site Cloner Import**.
+3. Go to **Tools → Flexa Site Migrator** to build a package.
+4. To deploy via link or wp-admin import, install and activate the plugin on the **staging** site as well, then use **Tools → Flexa Site Migrator Import**.
 
 == Frequently Asked Questions ==
 
@@ -61,14 +61,19 @@ Staging is **completely overwritten** (files and database). Only use it with a s
 
 = Is it translation-ready? =
 
-Yes. All admin-facing strings (PHP and JavaScript) are internationalized under the `site-cloner` text domain, and a `languages/site-cloner.pot` template is included.
+Yes. All admin-facing strings (PHP and JavaScript) are internationalized under the `flexa-site-migrator` text domain, and a `languages/flexa-site-migrator.pot` template is included.
 
 == Screenshots ==
 
-1. Build a migration package on the production site (Tools → Site Cloner).
-2. Import or pull the package on staging (Tools → Site Cloner Import).
+1. Build a migration package on the production site (Tools → Flexa Site Migrator).
+2. Import or pull the package on staging (Tools → Flexa Site Migrator Import).
 
 == Changelog ==
+
+= 1.0.2 =
+* Change: renamed the plugin to **Flexa Site Migrator** (slug `flexa-site-migrator`) for a distinctive, non-generic name.
+* Change: prefixed all globals, constants, options, AJAX actions, script/style handles, and nonces with `flexasm_`/`FLEXASM_` under the `Flexa\SiteMigrator` namespace to avoid collisions.
+* Security: hardened database export, import, and search-replace queries — table and column identifiers are now backtick-escaped, closing an identifier-interpolation gap.
 
 = 1.0.1 =
 * New: manual installer now runs a system requirements check (files present, database connection, PHP extensions) before starting a migration.
@@ -82,6 +87,9 @@ Yes. All admin-facing strings (PHP and JavaScript) are internationalized under t
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Renames the plugin to Flexa Site Migrator, prefixes all identifiers to avoid collisions, and hardens database queries against identifier injection.
 
 = 1.0.1 =
 Adds a pre-migration system check, one-click cleanup, and single-zip package download; fixes database import on MySQL 5.7+/8.0 and installer.php downloads.

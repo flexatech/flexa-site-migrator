@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 

@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -10,17 +10,17 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 class Package {
 
 	private $id;
-	private $dir;        // working directory: sd-packages/<id>
+	private $dir;        // working directory: flexasm-packages/<id>
 	private $state;
 
 	public function __construct( $id = null ) {
 		$this->id  = $id ?: gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 8 );
-		$this->dir = FLEXA_PACKAGE_DIR . '/' . $this->id;
+		$this->dir = FLEXASM_PACKAGE_DIR . '/' . $this->id;
 	}
 
 	public static function load( $id ) {
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			throw new \Exception( esc_html__( 'Invalid package ID.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid package ID.', 'flexa-site-migrator' ) );
 		}
 		$pkg = new self( $id );
 		$pkg->read_state();
@@ -34,7 +34,7 @@ class Package {
 	private function read_state() {
 		$raw = @file_get_contents( $this->state_file() );
 		if ( false === $raw ) {
-			throw new \Exception( esc_html__( 'Package not found.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Package not found.', 'flexa-site-migrator' ) );
 		}
 		$this->state = json_decode( $raw, true );
 	}
@@ -129,7 +129,7 @@ class Package {
 		sort( $parts );
 
 		$manifest = array(
-			'version'  => FLEXA_VERSION,
+			'version'  => FLEXASM_VERSION,
 			'created'  => gmdate( 'c' ),
 			'site_url' => $this->state['site_url'],
 			'home_url' => $this->state['home_url'],
@@ -140,7 +140,7 @@ class Package {
 		);
 		file_put_contents( $this->dir . '/manifest.json', wp_json_encode( $manifest, JSON_PRETTY_PRINT ) );
 
-		copy( FLEXA_PATH . 'templates/installer.tpl', $this->dir . '/installer.php' );
+		copy( FLEXASM_PATH . 'templates/installer.tpl', $this->dir . '/installer.php' );
 		wp_delete_file( $this->list_file() );
 
 		// Pull-by-link: hashed token + one-click link for staging.
@@ -158,14 +158,14 @@ class Package {
 		}
 		@file_put_contents(
 			$this->dir . '/.htaccess',
-			"<FilesMatch \"^(pull-token\\.hash|pull-pass\\.hash|pull-meta\\.json|sd-token\\.hash|sd-state\\.json)$\">\n"
+			"<FilesMatch \"^(pull-token\\.hash|pull-pass\\.hash|pull-meta\\.json|flexasm-token\\.hash|flexasm-state\\.json)$\">\n"
 			. "  <IfModule mod_authz_core.c>Require all denied</IfModule>\n"
 			. "  <IfModule !mod_authz_core.c>Order allow,deny\nDeny from all</IfModule>\n"
 			. "</FilesMatch>\n"
 		);
-		$pull_link = trailingslashit( home_url() ) . '?sd_pull=' . rawurlencode( $this->id ) . '&key=' . $pull_token;
+		$pull_link = trailingslashit( home_url() ) . '?flexasm_pull=' . rawurlencode( $this->id ) . '&key=' . $pull_token;
 
-		$base = FLEXA_PACKAGE_URL . '/' . $this->id;
+		$base = FLEXASM_PACKAGE_URL . '/' . $this->id;
 		$archive_urls = array();
 		foreach ( $parts as $p ) {
 			$archive_urls[] = $base . '/' . $p;
@@ -187,7 +187,7 @@ class Package {
 	}
 
 	/**
-	 * installer.php lives inside <uploads>/sd-packages and is a PHP file, so most
+	 * installer.php lives inside <uploads>/flexasm-packages and is a PHP file, so most
 	 * servers (nginx/Apache hardening) refuse direct access to it -> the manual
 	 * download 404s. Serve it through admin-ajax instead, which streams the raw
 	 * bytes as an attachment.
@@ -195,9 +195,9 @@ class Package {
 	public static function installer_download_url( $id ) {
 		return add_query_arg(
 			array(
-				'action'  => 'sd_installer',
+				'action'  => 'flexasm_installer',
 				'package' => rawurlencode( $id ),
-				'nonce'   => wp_create_nonce( 'sd_build' ),
+				'nonce'   => wp_create_nonce( 'flexasm_build' ),
 			),
 			admin_url( 'admin-ajax.php' )
 		);
@@ -212,9 +212,9 @@ class Package {
 	public static function package_download_url( $id ) {
 		return add_query_arg(
 			array(
-				'action'  => 'sd_package_zip',
+				'action'  => 'flexasm_package_zip',
 				'package' => rawurlencode( $id ),
-				'nonce'   => wp_create_nonce( 'sd_build' ),
+				'nonce'   => wp_create_nonce( 'flexasm_build' ),
 			),
 			admin_url( 'admin-ajax.php' )
 		);
@@ -223,7 +223,7 @@ class Package {
 	/** Validate an id and return a package handle without requiring state.json. */
 	public static function for_id( $id ) {
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			throw new \Exception( esc_html__( 'Invalid package ID.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid package ID.', 'flexa-site-migrator' ) );
 		}
 		return new self( $id );
 	}
@@ -234,15 +234,15 @@ class Package {
 	 */
 	public static function list_all() {
 		$out = array();
-		if ( ! is_dir( FLEXA_PACKAGE_DIR ) ) {
+		if ( ! is_dir( FLEXASM_PACKAGE_DIR ) ) {
 			return $out;
 		}
-		foreach ( glob( FLEXA_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
+		foreach ( glob( FLEXASM_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
 			if ( ! file_exists( "$dir/manifest.json" ) ) {
 				continue;
 			}
 			$id   = basename( $dir );
-			$base = FLEXA_PACKAGE_URL . '/' . $id;
+			$base = FLEXASM_PACKAGE_URL . '/' . $id;
 			$m    = json_decode( @file_get_contents( "$dir/manifest.json" ), true );
 
 			$archives = array();
@@ -281,7 +281,7 @@ class Package {
 	 */
 	public function regenerate_link() {
 		if ( ! is_dir( $this->dir ) ) {
-			throw new \Exception( esc_html__( 'Package not found.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Package not found.', 'flexa-site-migrator' ) );
 		}
 		$token = bin2hex( random_bytes( 32 ) );
 		file_put_contents( $this->dir . '/pull-token.hash', hash( 'sha256', $token ) );
@@ -294,7 +294,7 @@ class Package {
 		$meta['expires'] = time() + 48 * 3600;
 		file_put_contents( $this->dir . '/pull-meta.json', wp_json_encode( $meta ) );
 
-		return trailingslashit( home_url() ) . '?sd_pull=' . rawurlencode( $this->id ) . '&key=' . $token;
+		return trailingslashit( home_url() ) . '?flexasm_pull=' . rawurlencode( $this->id ) . '&key=' . $token;
 	}
 
 	/** Delete this package directory (removes the sensitive DB dump + archives). */

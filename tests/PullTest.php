@@ -1,7 +1,7 @@
 <?php
-namespace Flexa\SiteCloner\Tests;
+namespace Flexa\SiteMigrator\Tests;
 
-use Flexa\SiteCloner\Pull;
+use Flexa\SiteMigrator\Pull;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -44,8 +44,8 @@ final class PullTest extends TestCase {
 	public static function deniedNames(): array {
 		return array(
 			array( 'installer.php' ),
-			array( 'sd-token.hash' ),
-			array( 'sd-state.json' ),
+			array( 'flexasm-token.hash' ),
+			array( 'flexasm-state.json' ),
 			array( '../../wp-config.php' ),
 			array( 'archive.zip.php' ),
 			array( 'database.sql ' ),
@@ -56,7 +56,7 @@ final class PullTest extends TestCase {
 	public function test_link_id_extracts_the_package_id(): void {
 		$this->assertSame(
 			'pkg_abc123',
-			$this->call( 'link_id', 'https://prod.example/?sd_pull=pkg_abc123&key=deadbeef' )
+			$this->call( 'link_id', 'https://prod.example/?flexasm_pull=pkg_abc123&key=deadbeef' )
 		);
 	}
 
@@ -68,15 +68,15 @@ final class PullTest extends TestCase {
 	public static function badLinks(): array {
 		return array(
 			'no id'        => array( 'https://prod.example/?key=x' ),
-			'bad chars'    => array( 'https://prod.example/?sd_pull=../etc&key=x' ),
-			'empty id'     => array( 'https://prod.example/?sd_pull=&key=x' ),
+			'bad chars'    => array( 'https://prod.example/?flexasm_pull=../etc&key=x' ),
+			'empty id'     => array( 'https://prod.example/?flexasm_pull=&key=x' ),
 		);
 	}
 
 	public function test_valid_link_requires_http_scheme_and_id(): void {
-		$this->assertTrue( $this->call( 'valid_link', 'https://prod.example/?sd_pull=abc&key=x' ) );
-		$this->assertTrue( $this->call( 'valid_link', 'http://prod.example/?sd_pull=abc&key=x' ) );
-		$this->assertFalse( $this->call( 'valid_link', 'ftp://prod.example/?sd_pull=abc' ) );
+		$this->assertTrue( $this->call( 'valid_link', 'https://prod.example/?flexasm_pull=abc&key=x' ) );
+		$this->assertTrue( $this->call( 'valid_link', 'http://prod.example/?flexasm_pull=abc&key=x' ) );
+		$this->assertFalse( $this->call( 'valid_link', 'ftp://prod.example/?flexasm_pull=abc' ) );
 		$this->assertFalse( $this->call( 'valid_link', 'javascript:alert(1)' ) );
 		$this->assertFalse( $this->call( 'valid_link', 'https://prod.example/?key=nopackage' ) );
 	}

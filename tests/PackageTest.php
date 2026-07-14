@@ -1,7 +1,7 @@
 <?php
-namespace Flexa\SiteCloner\Tests;
+namespace Flexa\SiteMigrator\Tests;
 
-use Flexa\SiteCloner\Package;
+use Flexa\SiteMigrator\Package;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -37,9 +37,9 @@ final class PackageTest extends TestCase {
 		$query = $this->query( $url );
 
 		$this->assertStringContainsString( 'admin-ajax.php', $url );
-		$this->assertSame( 'sd_installer', $query['action'] );
+		$this->assertSame( 'flexasm_installer', $query['action'] );
 		$this->assertSame( 'pkg_1', $query['package'] );
-		$this->assertSame( 'nonce_sd_build', $query['nonce'] );
+		$this->assertSame( 'nonce_flexasm_build', $query['nonce'] );
 	}
 
 	public function test_package_download_url_uses_the_zip_action(): void {
@@ -47,9 +47,9 @@ final class PackageTest extends TestCase {
 		$query = $this->query( $url );
 
 		$this->assertStringContainsString( 'admin-ajax.php', $url );
-		$this->assertSame( 'sd_package_zip', $query['action'] );
+		$this->assertSame( 'flexasm_package_zip', $query['action'] );
 		$this->assertSame( 'pkg_2', $query['package'] );
-		$this->assertSame( 'nonce_sd_build', $query['nonce'] );
+		$this->assertSame( 'nonce_flexasm_build', $query['nonce'] );
 	}
 
 	/** Parse the query string of a URL into an assoc array. */

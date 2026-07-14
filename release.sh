@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Build a production zip of site-cloner into ./build/.
+# Build a production zip of flexa-site-migrator into ./build/.
 set -euo pipefail
 
-PLUGIN_SLUG="site-cloner"
+PLUGIN_SLUG="flexa-site-migrator"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 STAGE_DIR="${BUILD_DIR}/${PLUGIN_SLUG}"

@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -68,6 +68,15 @@ class Replace {
 	}
 
 	/**
+	 * Backtick-quote a MySQL identifier (table / column name) so it is safe to
+	 * interpolate into a query. Names come from the schema (SHOW TABLES/COLUMNS),
+	 * never from a request, but we escape any embedded backtick defensively.
+	 */
+	private static function esc_id( $name ) {
+		return '`' . str_replace( '`', '``', (string) $name ) . '`';
+	}
+
+	/**
 	 * Run search-replace across all tables of a mysqli connection.
 	 * $pairs = [ [from, to], ... ]. Returns the number of updated cells.
 	 */
@@ -82,7 +91,7 @@ class Replace {
 		foreach ( $tables as $table ) {
 			$cols = array();
 			$pk   = null;
-			$cres = mysqli_query( $mysqli, "SHOW COLUMNS FROM `$table`" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
+			$cres = mysqli_query( $mysqli, 'SHOW COLUMNS FROM ' . self::esc_id( $table ) ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
 			while ( $c = mysqli_fetch_assoc( $cres ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_assoc -- via WP's own mysqli handle ($wpdb->dbh).
 				$cols[] = $c['Field'];
 				if ( 'PRI' === $c['Key'] && null === $pk ) {
@@ -93,7 +102,7 @@ class Replace {
 				continue;
 			}
 
-			$rres = mysqli_query( $mysqli, "SELECT * FROM `$table`", MYSQLI_USE_RESULT ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
+			$rres = mysqli_query( $mysqli, 'SELECT * FROM ' . self::esc_id( $table ), MYSQLI_USE_RESULT ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
 			if ( ! $rres ) {
 				continue;
 			}
@@ -127,24 +136,24 @@ class Replace {
 				$sets = array();
 				foreach ( $cols as $col ) {
 					if ( $u['new'][ $col ] !== $u['row'][ $col ] ) {
-						$sets[] = "`$col`='" . mysqli_real_escape_string( $mysqli, $u['new'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
+						$sets[] = self::esc_id( $col ) . "='" . mysqli_real_escape_string( $mysqli, $u['new'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
 					}
 				}
 				if ( ! $sets ) {
 					continue;
 				}
 				if ( $pk && isset( $u['row'][ $pk ] ) ) {
-					$where = "`$pk`='" . mysqli_real_escape_string( $mysqli, $u['row'][ $pk ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
+					$where = self::esc_id( $pk ) . "='" . mysqli_real_escape_string( $mysqli, $u['row'][ $pk ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
 				} else {
 					$conds = array();
 					foreach ( $cols as $col ) {
 						$conds[] = ( null === $u['row'][ $col ] )
-							? "`$col` IS NULL"
-							: "`$col`='" . mysqli_real_escape_string( $mysqli, $u['row'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
+							? self::esc_id( $col ) . ' IS NULL'
+							: self::esc_id( $col ) . "='" . mysqli_real_escape_string( $mysqli, $u['row'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
 					}
 					$where = implode( ' AND ', $conds );
 				}
-				if ( @mysqli_query( $mysqli, "UPDATE `$table` SET " . implode( ',', $sets ) . " WHERE $where LIMIT 1" ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
+				if ( @mysqli_query( $mysqli, 'UPDATE ' . self::esc_id( $table ) . ' SET ' . implode( ',', $sets ) . " WHERE $where LIMIT 1" ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
 					$changed++;
 				}
 			}

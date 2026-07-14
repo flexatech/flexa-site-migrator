@@ -1,7 +1,7 @@
 <?php
-namespace Flexa\SiteCloner\Tests;
+namespace Flexa\SiteMigrator\Tests;
 
-use Flexa\SiteCloner\Replace;
+use Flexa\SiteMigrator\Replace;
 use PHPUnit\Framework\TestCase;
 
 /**

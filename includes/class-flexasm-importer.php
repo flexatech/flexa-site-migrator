@@ -1,11 +1,11 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
  * Importer that runs on STAGING via wp-admin.
- * - Scans available packages in wp-content/sd-packages/.
+ * - Scans available packages in wp-content/flexasm-packages/.
  * - Extracts files in chunks (DB untouched yet -> auth still intact).
  * - Imports DB + search-replace in a SINGLE request (auth verified at request start).
  */
@@ -16,8 +16,8 @@ class Importer {
 	/** Files to exclude when extracting onto staging. */
 	private static function excluded( $name ) {
 		$skip = array(
-			'wp-content/plugins/site-cloner/', // don't overwrite ourselves while running
-			'wp-content/sd-packages/',
+			'wp-content/plugins/flexa-site-migrator/', // don't overwrite ourselves while running
+			'wp-content/flexasm-packages/',
 			'wp-config.php',
 			// Production cache drop-ins can cause a fatal on staging (missing Redis/Memcached…).
 			'wp-content/object-cache.php',
@@ -32,13 +32,13 @@ class Importer {
 		return false;
 	}
 
-	/** List valid packages in sd-packages. */
+	/** List valid packages in flexasm-packages. */
 	public static function list_packages() {
 		$out = array();
-		if ( ! is_dir( FLEXA_PACKAGE_DIR ) ) {
+		if ( ! is_dir( FLEXASM_PACKAGE_DIR ) ) {
 			return $out;
 		}
-		foreach ( glob( FLEXA_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
+		foreach ( glob( FLEXASM_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
 			$id = basename( $dir );
 			$has_archive = file_exists( "$dir/archive.zip" ) || glob( "$dir/archive-*.zip" );
 			if ( file_exists( "$dir/manifest.json" ) && file_exists( "$dir/database.sql" ) && $has_archive ) {
@@ -63,12 +63,12 @@ class Importer {
 
 	public function __construct( $id ) {
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			throw new \Exception( esc_html__( 'Invalid package ID.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid package ID.', 'flexa-site-migrator' ) );
 		}
-		$this->dir = FLEXA_PACKAGE_DIR . '/' . $id;
+		$this->dir = FLEXASM_PACKAGE_DIR . '/' . $id;
 		$this->manifest = json_decode( @file_get_contents( $this->dir . '/manifest.json' ), true );
 		if ( ! $this->manifest ) {
-			throw new \Exception( esc_html__( 'Could not read the package manifest.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Could not read the package manifest.', 'flexa-site-migrator' ) );
 		}
 	}
 
@@ -92,12 +92,12 @@ class Importer {
 			$path = $this->dir . '/' . basename( $name );
 			if ( ! is_file( $path ) ) {
 				/* translators: %s: archive part file name */
-				throw new \Exception( esc_html( sprintf( __( 'Missing archive part: %s', 'site-cloner' ), basename( $name ) ) ) );
+				throw new \Exception( esc_html( sprintf( __( 'Missing archive part: %s', 'flexa-site-migrator' ), basename( $name ) ) ) );
 			}
 			$zip = new \ZipArchive();
 			if ( $zip->open( $path ) !== true ) {
 				/* translators: %s: archive part file name */
-				throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'site-cloner' ), basename( $name ) ) ) );
+				throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'flexa-site-migrator' ), basename( $name ) ) ) );
 			}
 			$entries = $zip->numFiles;
 			$zip->close();
@@ -131,19 +131,19 @@ class Importer {
 			'replace'     => array( 'started' => false, 'changed' => 0 ),
 		);
 
-		$ok_state = false !== file_put_contents( $this->dir . '/sd-state.json', wp_json_encode( $state ) );
-		$ok_hash  = false !== file_put_contents( $this->dir . '/sd-token.hash', hash( 'sha256', $token ) );
-		$ok_run   = copy( FLEXA_PATH . 'templates/runner.tpl', $this->dir . '/runner.php' );
+		$ok_state = false !== file_put_contents( $this->dir . '/flexasm-state.json', wp_json_encode( $state ) );
+		$ok_hash  = false !== file_put_contents( $this->dir . '/flexasm-token.hash', hash( 'sha256', $token ) );
+		$ok_run   = copy( FLEXASM_PATH . 'templates/runner.tpl', $this->dir . '/runner.php' );
 
 		if ( $ok_state && $ok_hash && $ok_run ) {
 			@file_put_contents(
 				$this->dir . '/.htaccess',
-				"<FilesMatch \"^(sd-state\\.json|sd-token\\.hash)$\">\n"
+				"<FilesMatch \"^(flexasm-state\\.json|flexasm-token\\.hash)$\">\n"
 				. "  <IfModule mod_authz_core.c>Require all denied</IfModule>\n"
 				. "  <IfModule !mod_authz_core.c>Order allow,deny\nDeny from all</IfModule>\n"
 				. "</FilesMatch>\n"
 			);
-			$runner_url = FLEXA_PACKAGE_URL . '/' . basename( $this->dir ) . '/runner.php';
+			$runner_url = FLEXASM_PACKAGE_URL . '/' . basename( $this->dir ) . '/runner.php';
 		}
 
 		return array(
@@ -160,18 +160,18 @@ class Importer {
 	public function extract( $part_name, $offset ) {
 		$part_name = basename( $part_name );
 		if ( ! preg_match( '/^archive(-\d+)?\.zip$/', $part_name ) ) {
-			throw new \Exception( esc_html__( 'Invalid archive part name.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid archive part name.', 'flexa-site-migrator' ) );
 		}
 		$path = $this->dir . '/' . $part_name;
 		if ( ! is_file( $path ) ) {
 			/* translators: %s: archive part file name */
-			throw new \Exception( esc_html( sprintf( __( 'Archive part not found: %s', 'site-cloner' ), $part_name ) ) );
+			throw new \Exception( esc_html( sprintf( __( 'Archive part not found: %s', 'flexa-site-migrator' ), $part_name ) ) );
 		}
 
 		$zip = new \ZipArchive();
 		if ( $zip->open( $path ) !== true ) {
 			/* translators: %s: archive part file name */
-			throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'site-cloner' ), $part_name ) ) );
+			throw new \Exception( esc_html( sprintf( __( 'Could not open %s', 'flexa-site-migrator' ), $part_name ) ) );
 		}
 		$total = $zip->numFiles;
 		$names = array();
@@ -238,9 +238,9 @@ class Importer {
 			$ok = $this->update_config_prefix( $prod_prefix );
 			$prefix_note = $ok
 				/* translators: %s: table prefix */
-				? sprintf( __( 'Changed the table prefix in wp-config to "%s".', 'site-cloner' ), $prod_prefix )
+				? sprintf( __( 'Changed the table prefix in wp-config to "%s".', 'flexa-site-migrator' ), $prod_prefix )
 				/* translators: %1$s: staging table prefix; %2$s: production table prefix; %3$s: production table prefix to set manually */
-				: sprintf( __( '⚠️ Prefixes differ (%1$s → %2$s) but wp-config.php could NOT be written. Please set $table_prefix = \'%3$s\'; manually.', 'site-cloner' ), $stag_prefix, $prod_prefix, $prod_prefix );
+				: sprintf( __( '⚠️ Prefixes differ (%1$s → %2$s) but wp-config.php could NOT be written. Please set $table_prefix = \'%3$s\'; manually.', 'flexa-site-migrator' ), $stag_prefix, $prod_prefix, $prod_prefix );
 		}
 
 		return array(
@@ -256,7 +256,7 @@ class Importer {
 	private function import_sql( $mysqli, $file ) {
 		$fh = fopen( $file, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		if ( ! $fh ) {
-			throw new \Exception( esc_html__( 'Could not read database.sql.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Could not read database.sql.', 'flexa-site-migrator' ) );
 		}
 		mysqli_query( $mysqli, 'SET FOREIGN_KEY_CHECKS=0' ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
 
@@ -291,11 +291,16 @@ class Importer {
 		return $count;
 	}
 
+	/** Backtick-quote a MySQL identifier so it is safe to interpolate (prefix comes from the manifest, not a request). */
+	private static function esc_id( $name ) {
+		return '`' . str_replace( '`', '``', (string) $name ) . '`';
+	}
+
 	/** Add this plugin to active_plugins in the just-imported DB (using the production prefix). */
 	private function ensure_self_active( $mysqli, $prefix ) {
-		$plugin = 'site-cloner/site-cloner.php';
-		$table  = $prefix . 'options';
-		$res = @mysqli_query( $mysqli, "SELECT option_value FROM `$table` WHERE option_name='active_plugins' LIMIT 1" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
+		$plugin = 'flexa-site-migrator/flexa-site-migrator.php';
+		$table  = self::esc_id( $prefix . 'options' );
+		$res = @mysqli_query( $mysqli, "SELECT option_value FROM $table WHERE option_name='active_plugins' LIMIT 1" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
 		if ( ! $res ) {
 			return;
 		}
@@ -308,7 +313,7 @@ class Importer {
 			$list[] = $plugin;
 		}
 		$val = mysqli_real_escape_string( $mysqli, serialize( $list ) ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Escaping via WP's own mysqli handle ($wpdb->dbh).
-		@mysqli_query( $mysqli, "UPDATE `$table` SET option_value='$val' WHERE option_name='active_plugins'" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
+		@mysqli_query( $mysqli, "UPDATE $table SET option_value='$val' WHERE option_name='active_plugins'" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
 	}
 
 	/** Update the $table_prefix line in the staging wp-config.php. */

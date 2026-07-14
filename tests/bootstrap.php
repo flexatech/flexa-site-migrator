@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPUnit bootstrap for Site Cloner unit tests.
+ * PHPUnit bootstrap for Flexa Site Migrator unit tests.
  *
  * These are true unit tests: they exercise the plugin's pure logic (the ZIP
  * streamer, the serialize-safe search-replace, id validation and URL builders)
@@ -14,13 +14,13 @@ error_reporting( E_ALL & ~E_DEPRECATED );
 // The include files bail unless ABSPATH is defined; the plugin constants point
 // class code at a scratch directory the tests can write package fixtures into.
 if ( ! defined( 'ABSPATH' ) ) {
-	define( 'ABSPATH', sys_get_temp_dir() . '/sd-tests-abspath/' );
+	define( 'ABSPATH', sys_get_temp_dir() . '/flexasm-tests-abspath/' );
 }
-define( 'FLEXA_VERSION', 'test' );
-define( 'FLEXA_PATH', dirname( __DIR__ ) . '/' );
-define( 'FLEXA_URL', 'https://example.test/wp-content/plugins/site-cloner/' );
-define( 'FLEXA_PACKAGE_DIR', sys_get_temp_dir() . '/sd-tests-packages' );
-define( 'FLEXA_PACKAGE_URL', 'https://example.test/wp-content/uploads/sd-packages' );
+define( 'FLEXASM_VERSION', 'test' );
+define( 'FLEXASM_PATH', dirname( __DIR__ ) . '/' );
+define( 'FLEXASM_URL', 'https://example.test/wp-content/plugins/flexa-site-migrator/' );
+define( 'FLEXASM_PACKAGE_DIR', sys_get_temp_dir() . '/flexasm-tests-packages' );
+define( 'FLEXASM_PACKAGE_URL', 'https://example.test/wp-content/uploads/flexasm-packages' );
 
 /* ---- Minimal WordPress function stubs (only what the tested code touches) ---- */
 
@@ -77,7 +77,7 @@ if ( ! function_exists( 'add_query_arg' ) ) {
 
 /* ---- Code under test ---- */
 
-require_once FLEXA_PATH . 'includes/class-sd-zipstream.php';
-require_once FLEXA_PATH . 'includes/class-sd-replace.php';
-require_once FLEXA_PATH . 'includes/class-sd-package.php';
-require_once FLEXA_PATH . 'includes/class-sd-pull.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-zipstream.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-replace.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-package.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-pull.php';

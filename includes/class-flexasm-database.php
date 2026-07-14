@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -68,7 +68,7 @@ class Database {
 	}
 
 	private function header() {
-		return "-- Site Cloner dump\n"
+		return "-- Flexa Site Migrator dump\n"
 			. "-- Generated: " . gmdate( 'Y-m-d H:i:s' ) . "\n"
 			. "SET FOREIGN_KEY_CHECKS=0;\n"
 			. "SET NAMES " . ( DB_CHARSET ?: 'utf8mb4' ) . ";\n\n";
@@ -82,7 +82,7 @@ class Database {
 	public function export_chunk( array $tables, array $state ) {
 		$fh = fopen( $this->sql_file, 'a' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		if ( ! $fh ) {
-			throw new \Exception( esc_html__( 'Could not write to the SQL file.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Could not write to the SQL file.', 'flexa-site-migrator' ) );
 		}
 
 		// First run: write the header.
@@ -112,7 +112,7 @@ class Database {
 			// disable/enable block covers the whole multi-line statement.
 			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$rows = $this->wpdb->get_results(
-				$this->wpdb->prepare( "SELECT * FROM `$table` LIMIT %d OFFSET %d", $limit, $offset ),
+				$this->wpdb->prepare( 'SELECT * FROM ' . self::esc_id( $table ) . ' LIMIT %d OFFSET %d', $limit, $offset ),
 				ARRAY_A
 			);
 			// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -144,10 +144,15 @@ class Database {
 		return array( 'state' => $state, 'done' => $done );
 	}
 
+	/** Backtick-quote a MySQL identifier (table name from SHOW TABLES, never a request). */
+	private static function esc_id( $name ) {
+		return '`' . str_replace( '`', '``', (string) $name ) . '`';
+	}
+
 	private function write_structure( $fh, $table ) {
 		fwrite( $fh, "\n-- Table: $table\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
-		fwrite( $fh, "DROP TABLE IF EXISTS `$table`;\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
-		$create = $this->wpdb->get_row( "SHOW CREATE TABLE `$table`", ARRAY_N ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier from SHOW TABLES (not user input); MySQL has no placeholder for identifiers.
+		fwrite( $fh, 'DROP TABLE IF EXISTS ' . self::esc_id( $table ) . ";\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
+		$create = $this->wpdb->get_row( 'SHOW CREATE TABLE ' . self::esc_id( $table ), ARRAY_N ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier from SHOW TABLES (not user input); MySQL has no placeholder for identifiers.
 		if ( isset( $create[1] ) ) {
 			fwrite( $fh, $create[1] . ";\n\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		}
@@ -164,7 +169,7 @@ class Database {
 					$vals[] = "'" . mysqli_real_escape_string( $dbh, $value ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Escaping a value for the streamed dump using WP's own mysqli handle ($wpdb->dbh).
 				}
 			}
-			fwrite( $fh, "INSERT INTO `$table` VALUES (" . implode( ',', $vals ) . ");\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
+			fwrite( $fh, 'INSERT INTO ' . self::esc_id( $table ) . ' VALUES (' . implode( ',', $vals ) . ");\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		}
 	}
 }

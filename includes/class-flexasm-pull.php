@@ -1,5 +1,5 @@
 <?php
-namespace Flexa\SiteCloner;
+namespace Flexa\SiteMigrator;
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * Pull-by-link:
  *  - On PRODUCTION: Pull::handle() serves package files over HTTP,
  *    with hashed-token verification + HTTP Range support (chunked download for very large files).
- *  - On STAGING: Pull::info()/download() fetches files into wp-content/sd-packages/<id>/.
+ *  - On STAGING: Pull::info()/download() fetches files into wp-content/flexasm-packages/<id>/.
  */
 class Pull {
 
@@ -20,42 +20,42 @@ class Pull {
 
 	/* ============================ PRODUCTION ============================ */
 
-	/** Hooked on 'init'. Serves ?sd_pull=<id>&key=<token>&action=info|file&name=... */
+	/** Hooked on 'init'. Serves ?flexasm_pull=<id>&key=<token>&action=info|file&name=... */
 	public static function handle() {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public cross-site endpoint authenticated by a hashed token (verified below), not a nonce.
-		if ( ! isset( $_GET['sd_pull'] ) ) {
+		if ( ! isset( $_GET['flexasm_pull'] ) ) {
 			return;
 		}
-		$id  = sanitize_text_field( wp_unslash( $_GET['sd_pull'] ) );
+		$id  = sanitize_text_field( wp_unslash( $_GET['flexasm_pull'] ) );
 		$key = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
 
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
-			self::deny( __( 'Invalid ID.', 'site-cloner' ) );
+			self::deny( __( 'Invalid ID.', 'flexa-site-migrator' ) );
 		}
-		$dir       = FLEXA_PACKAGE_DIR . '/' . $id;
+		$dir       = FLEXASM_PACKAGE_DIR . '/' . $id;
 		$hash_file = $dir . '/pull-token.hash';
 		if ( ! is_file( $hash_file ) ) {
-			self::deny( __( 'Package does not exist or sharing is not enabled.', 'site-cloner' ) );
+			self::deny( __( 'Package does not exist or sharing is not enabled.', 'flexa-site-migrator' ) );
 		}
 		if ( '' === $key || ! hash_equals( trim( file_get_contents( $hash_file ) ), hash( 'sha256', $key ) ) ) {
-			self::deny( __( 'Invalid token.', 'site-cloner' ) );
+			self::deny( __( 'Invalid token.', 'flexa-site-migrator' ) );
 		}
 
 		// Expired?
 		$meta = json_decode( @file_get_contents( $dir . '/pull-meta.json' ), true );
 		if ( $meta && ! empty( $meta['expires'] ) && time() > (int) $meta['expires'] ) {
-			self::deny( __( 'The link has expired — please create a new package on production.', 'site-cloner' ) );
+			self::deny( __( 'The link has expired — please create a new package on production.', 'flexa-site-migrator' ) );
 		}
 
 		// Password (if the package sets one). Received via header so it never lands in the access log.
 		$pass_file = $dir . '/pull-pass.hash';
 		if ( is_file( $pass_file ) ) {
-			$provided = isset( $_SERVER['HTTP_X_SD_AUTH'] ) ? (string) wp_unslash( $_SERVER['HTTP_X_SD_AUTH'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw password verified with password_verify(); must not be altered.
+			$provided = isset( $_SERVER['HTTP_X_FLEXASM_AUTH'] ) ? (string) wp_unslash( $_SERVER['HTTP_X_FLEXASM_AUTH'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw password verified with password_verify(); must not be altered.
 			if ( '' === $provided ) {
-				self::json( array( 'ok' => false, 'need_pass' => true, 'message' => __( 'This package is password-protected — please enter the password.', 'site-cloner' ) ), 401 );
+				self::json( array( 'ok' => false, 'need_pass' => true, 'message' => __( 'This package is password-protected — please enter the password.', 'flexa-site-migrator' ) ), 401 );
 			}
 			if ( ! password_verify( $provided, trim( file_get_contents( $pass_file ) ) ) ) {
-				self::json( array( 'ok' => false, 'need_pass' => true, 'message' => __( 'Incorrect password.', 'site-cloner' ) ), 403 );
+				self::json( array( 'ok' => false, 'need_pass' => true, 'message' => __( 'Incorrect password.', 'flexa-site-migrator' ) ), 403 );
 			}
 		}
 
@@ -65,7 +65,7 @@ class Pull {
 			if ( ! in_array( $ip, $meta['allow_ips'], true ) ) {
 				self::json( array( 'ok' => false, 'blocked_ip' => $ip,
 					/* translators: %s: calling IP address */
-					'message' => sprintf( __( 'IP %s is not in the allowlist. Add this IP to the "IP restriction" field when creating the package on production.', 'site-cloner' ), $ip ) ), 403 );
+					'message' => sprintf( __( 'IP %s is not in the allowlist. Add this IP to the "IP restriction" field when creating the package on production.', 'flexa-site-migrator' ), $ip ) ), 403 );
 			}
 		}
 
@@ -97,12 +97,12 @@ class Pull {
 		if ( 'file' === $action ) {
 			$name = isset( $_GET['name'] ) ? basename( sanitize_text_field( wp_unslash( $_GET['name'] ) ) ) : '';
 			if ( ! self::allowed_name( $name ) || ! is_file( "$dir/$name" ) ) {
-				self::deny( __( 'Invalid file.', 'site-cloner' ) );
+				self::deny( __( 'Invalid file.', 'flexa-site-migrator' ) );
 			}
 			self::serve_range( "$dir/$name" );
 		}
 
-		self::deny( __( 'Invalid action.', 'site-cloner' ) );
+		self::deny( __( 'Invalid action.', 'flexa-site-migrator' ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -155,7 +155,7 @@ class Pull {
 	private static function link_id( $link ) {
 		$q = wp_parse_url( $link, PHP_URL_QUERY );
 		parse_str( (string) $q, $args );
-		$id = isset( $args['sd_pull'] ) ? $args['sd_pull'] : '';
+		$id = isset( $args['flexasm_pull'] ) ? $args['flexasm_pull'] : '';
 		return preg_match( '/^[A-Za-z0-9_]+$/', $id ) ? $id : '';
 	}
 
@@ -176,10 +176,10 @@ class Pull {
 	private static function net_hint( $msg ) {
 		if ( self::is_ssl_err( $msg ) ) {
 			/* translators: %s: underlying error message */
-			return sprintf( __( 'SSL error while calling production (%s). If production is a local/self-signed site (.test, .local…), enable "Skip SSL verification" and try again.', 'site-cloner' ), $msg );
+			return sprintf( __( 'SSL error while calling production (%s). If production is a local/self-signed site (.test, .local…), enable "Skip SSL verification" and try again.', 'flexa-site-migrator' ), $msg );
 		}
 		/* translators: %s: underlying error message */
-		return sprintf( __( 'Could not reach production: %s', 'site-cloner' ), $msg );
+		return sprintf( __( 'Could not reach production: %s', 'flexa-site-migrator' ), $msg );
 	}
 
 	/**
@@ -188,7 +188,7 @@ class Pull {
 	 */
 	public static function test( $link, $password = '' ) {
 		if ( ! self::valid_link( $link ) ) {
-			throw new \Exception( esc_html__( 'Invalid link (missing http/https or the sd_pull parameter).', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid link (missing http/https or the flexasm_pull parameter).', 'flexa-site-migrator' ) );
 		}
 		$url = add_query_arg( 'action', 'info', $link );
 		$get = function ( $verify ) use ( $url, $password ) {
@@ -204,7 +204,7 @@ class Pull {
 				if ( is_wp_error( $res2 ) ) {
 					return array( 'ok' => false, 'reachable' => false, 'ssl' => 'fail',
 						/* translators: %s: underlying error message */
-						'message' => sprintf( __( 'Still could not connect even with SSL verification off: %s', 'site-cloner' ), $res2->get_error_message() ) );
+						'message' => sprintf( __( 'Still could not connect even with SSL verification off: %s', 'flexa-site-migrator' ), $res2->get_error_message() ) );
 				}
 				$ssl = 'selfsigned';
 				$res = $res2;
@@ -228,29 +228,29 @@ class Pull {
 				'size'            => size_format( $size ),
 				'insecure_needed' => ( 'selfsigned' === $ssl ),
 				'message'         => ( 'selfsigned' === $ssl )
-					? __( 'Connected, but the certificate is invalid (self-signed?). "Skip SSL verification" will be enabled automatically.', 'site-cloner' )
-					: __( 'Connection OK, token valid.', 'site-cloner' ),
+					? __( 'Connected, but the certificate is invalid (self-signed?). "Skip SSL verification" will be enabled automatically.', 'flexa-site-migrator' )
+					: __( 'Connection OK, token valid.', 'flexa-site-migrator' ),
 			);
 		}
 
 		if ( ! empty( $data['need_pass'] ) ) {
 			return array( 'ok' => false, 'reachable' => true, 'ssl' => $ssl, 'need_pass' => true,
-				'message' => $data['message'] ?? __( 'This package is password-protected — please enter the password.', 'site-cloner' ) );
+				'message' => $data['message'] ?? __( 'This package is password-protected — please enter the password.', 'flexa-site-migrator' ) );
 		}
 		if ( ! empty( $data['message'] ) ) {
 			return array( 'ok' => false, 'reachable' => true, 'ssl' => $ssl,
 				/* translators: %s: error message returned by production */
-				'message' => sprintf( __( 'Production returned an error: %s (check the token/link).', 'site-cloner' ), $data['message'] ) );
+				'message' => sprintf( __( 'Production returned an error: %s (check the token/link).', 'flexa-site-migrator' ), $data['message'] ) );
 		}
 		return array( 'ok' => false, 'reachable' => true, 'ssl' => $ssl,
 			/* translators: %s: HTTP response code */
-			'message' => sprintf( __( 'HTTP %s — invalid response.', 'site-cloner' ), $code ) );
+			'message' => sprintf( __( 'HTTP %s — invalid response.', 'flexa-site-migrator' ), $code ) );
 	}
 
 	/** Fetch the file list from production + create the local directory. */
 	public static function info( $link, $verify_ssl = true, $password = '' ) {
 		if ( ! self::valid_link( $link ) ) {
-			throw new \Exception( esc_html__( 'Invalid link.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid link.', 'flexa-site-migrator' ) );
 		}
 		$id  = self::link_id( $link );
 		$url = add_query_arg( 'action', 'info', $link );
@@ -261,15 +261,15 @@ class Pull {
 		if ( 200 !== wp_remote_retrieve_response_code( $res ) ) {
 			$body = json_decode( wp_remote_retrieve_body( $res ), true );
 			/* translators: %s: HTTP response code */
-			$msg  = ! empty( $body['message'] ) ? $body['message'] : sprintf( __( 'Production returned an error (%s). Check the link/token/password.', 'site-cloner' ), wp_remote_retrieve_response_code( $res ) );
+			$msg  = ! empty( $body['message'] ) ? $body['message'] : sprintf( __( 'Production returned an error (%s). Check the link/token/password.', 'flexa-site-migrator' ), wp_remote_retrieve_response_code( $res ) );
 			throw new \Exception( esc_html( $msg ) );
 		}
 		$data = json_decode( wp_remote_retrieve_body( $res ), true );
 		if ( empty( $data['ok'] ) || empty( $data['files'] ) ) {
-			throw new \Exception( esc_html__( 'Invalid package data.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid package data.', 'flexa-site-migrator' ) );
 		}
 
-		$dir = FLEXA_PACKAGE_DIR . '/' . $id;
+		$dir = FLEXASM_PACKAGE_DIR . '/' . $id;
 		wp_mkdir_p( $dir );
 		file_put_contents( $dir . '/index.php', '<?php // Silence is golden.' );
 
@@ -280,7 +280,7 @@ class Pull {
 	private static function req_args( $verify_ssl, $password, $timeout = 30, $extra_headers = array() ) {
 		$headers = $extra_headers;
 		if ( '' !== (string) $password ) {
-			$headers['X-SD-Auth'] = (string) $password;
+			$headers['X-FLEXASM-Auth'] = (string) $password;
 		}
 		return array(
 			'timeout'   => $timeout,
@@ -302,14 +302,14 @@ class Pull {
 	/** Pull one chunk of a file to disk (append). */
 	public static function download( $link, $name, $offset, $total, $verify_ssl = true, $password = '' ) {
 		if ( ! self::valid_link( $link ) ) {
-			throw new \Exception( esc_html__( 'Invalid link.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid link.', 'flexa-site-migrator' ) );
 		}
 		$name = basename( $name );
 		if ( ! self::allowed_name( $name ) ) {
-			throw new \Exception( esc_html__( 'Invalid file name.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Invalid file name.', 'flexa-site-migrator' ) );
 		}
 		$id     = self::link_id( $link );
-		$dir    = FLEXA_PACKAGE_DIR . '/' . $id;
+		$dir    = FLEXASM_PACKAGE_DIR . '/' . $id;
 		$target = $dir . '/' . $name;
 		$offset = max( 0, (int) $offset );
 		$total  = max( 0, (int) $total );
@@ -324,7 +324,7 @@ class Pull {
 		$code = wp_remote_retrieve_response_code( $res );
 		if ( 200 !== $code && 206 !== $code ) {
 			/* translators: %s: HTTP response code */
-			throw new \Exception( esc_html( sprintf( __( 'Production returned an error during download (%s).', 'site-cloner' ), $code ) ) );
+			throw new \Exception( esc_html( sprintf( __( 'Production returned an error during download (%s).', 'flexa-site-migrator' ), $code ) ) );
 		}
 		$body = wp_remote_retrieve_body( $res );
 		$len  = strlen( $body );
@@ -333,7 +333,7 @@ class Pull {
 		$mode = ( 0 === $offset || 200 === $code ) ? 'wb' : 'ab';
 		$fh   = fopen( $target, $mode ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		if ( ! $fh ) {
-			throw new \Exception( esc_html__( 'Could not write the local file.', 'site-cloner' ) );
+			throw new \Exception( esc_html__( 'Could not write the local file.', 'flexa-site-migrator' ) );
 		}
 		fwrite( $fh, $body ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		fclose( $fh ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Site Cloner - Installer
+ * Flexa Site Migrator - Installer
  * Run this file on STAGING (place it in the same folder as archive.zip + database.sql + manifest.json).
  * Does not depend on WordPress. It will: extract -> import DB -> search-replace -> write wp-config.php.
  */
@@ -16,8 +16,8 @@ if ( function_exists( 'mysqli_report' ) ) {
 	mysqli_report( MYSQLI_REPORT_OFF );
 }
 
-define( 'SD_ROOT', __DIR__ );
-$manifest = json_decode( @file_get_contents( SD_ROOT . '/manifest.json' ), true );
+define( 'FLEXASM_ROOT', __DIR__ );
+$manifest = json_decode( @file_get_contents( FLEXASM_ROOT . '/manifest.json' ), true );
 if ( ! $manifest ) {
 	die( 'Could not read manifest.json. Please place the installer in the same folder as the package.' );
 }
@@ -27,7 +27,7 @@ $scheme   = ( ! empty( $_SERVER['HTTPS'] ) && 'off' !== $_SERVER['HTTPS'] ) ? 'h
 $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $dir_url  = rtrim( str_replace( '\\', '/', dirname( $_SERVER['SCRIPT_NAME'] ) ), '/' );
 $guess_url  = $scheme . '://' . $host . $dir_url;
-$guess_path = str_replace( '\\', '/', rtrim( SD_ROOT, '/\\' ) ) . '/';
+$guess_path = str_replace( '\\', '/', rtrim( FLEXASM_ROOT, '/\\' ) ) . '/';
 
 $step   = $_POST['step'] ?? 'form';
 $errors = array();
@@ -48,7 +48,7 @@ $fields = array(
 $preflight    = array();
 $preflight_ok = true;
 if ( 'check' === $step || 'deploy' === $step ) {
-	$preflight = sd_preflight( $manifest, $fields );
+	$preflight = flexasm_preflight( $manifest, $fields );
 	foreach ( $preflight as $c ) {
 		if ( ! $c['ok'] ) {
 			$preflight_ok = false;
@@ -65,20 +65,20 @@ if ( 'check' === $step || 'deploy' === $step ) {
 /* ------------------------------------------------------------------ */
 
 /** Serialization-SAFE search-replace (based on: Search-Replace-DB). */
-function sd_replace_recursive( $from, $to, $data, $serialised = false ) {
+function flexasm_replace_recursive( $from, $to, $data, $serialised = false ) {
 	try {
 		if ( is_string( $data ) && '' !== $data && ( $un = @unserialize( $data ) ) !== false ) {
-			$data = sd_replace_recursive( $from, $to, $un, true );
+			$data = flexasm_replace_recursive( $from, $to, $un, true );
 		} elseif ( is_array( $data ) ) {
 			$tmp = array();
 			foreach ( $data as $k => $v ) {
-				$tmp[ $k ] = sd_replace_recursive( $from, $to, $v, false );
+				$tmp[ $k ] = flexasm_replace_recursive( $from, $to, $v, false );
 			}
 			$data = $tmp;
 		} elseif ( is_object( $data ) ) {
 			$tmp = clone $data;
 			foreach ( get_object_vars( $data ) as $k => $v ) {
-				$tmp->$k = sd_replace_recursive( $from, $to, $v, false );
+				$tmp->$k = flexasm_replace_recursive( $from, $to, $v, false );
 			}
 			$data = $tmp;
 		} elseif ( is_string( $data ) ) {
@@ -91,7 +91,7 @@ function sd_replace_recursive( $from, $to, $data, $serialised = false ) {
 	return $data;
 }
 
-function sd_salt( $len = 64 ) {
+function flexasm_salt( $len = 64 ) {
 	$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}<>?';
 	$out   = '';
 	for ( $i = 0; $i < $len; $i++ ) {
@@ -100,7 +100,7 @@ function sd_salt( $len = 64 ) {
 	return $out;
 }
 
-function sd_human_size( $bytes ) {
+function flexasm_human_size( $bytes ) {
 	$units = array( 'B', 'KB', 'MB', 'GB', 'TB' );
 	$i     = 0;
 	$bytes = max( (float) $bytes, 0 );
@@ -116,7 +116,7 @@ function sd_human_size( $bytes ) {
  * BEFORE the destructive migration runs. Returns a list of
  * array( label, ok, note ) rows. Rows with ok=false block the migration.
  */
-function sd_preflight( $manifest, $fields ) {
+function flexasm_preflight( $manifest, $fields ) {
 	$checks = array();
 
 	// PHP version.
@@ -144,27 +144,27 @@ function sd_preflight( $manifest, $fields ) {
 	);
 
 	// Target directory writable (extract + write wp-config.php).
-	$writable = is_writable( SD_ROOT );
+	$writable = is_writable( FLEXASM_ROOT );
 	$checks[] = array(
 		'label' => 'Target folder is writable',
 		'ok'    => $writable,
-		'note'  => $writable ? SD_ROOT : 'not writable: ' . SD_ROOT,
+		'note'  => $writable ? FLEXASM_ROOT : 'not writable: ' . FLEXASM_ROOT,
 	);
 
 	// database.sql present.
-	$sql_file = SD_ROOT . '/database.sql';
+	$sql_file = FLEXASM_ROOT . '/database.sql';
 	$has_sql  = is_file( $sql_file );
 	$checks[] = array(
 		'label' => 'database.sql present',
 		'ok'    => $has_sql,
-		'note'  => $has_sql ? sd_human_size( filesize( $sql_file ) ) : 'missing from this folder',
+		'note'  => $has_sql ? flexasm_human_size( filesize( $sql_file ) ) : 'missing from this folder',
 	);
 
 	// Archive part(s) present.
 	$archives = ! empty( $manifest['archives'] ) ? $manifest['archives'] : array( 'archive.zip' );
 	$missing  = array();
 	foreach ( $archives as $apart ) {
-		if ( ! is_file( SD_ROOT . '/' . basename( $apart ) ) ) {
+		if ( ! is_file( FLEXASM_ROOT . '/' . basename( $apart ) ) ) {
 			$missing[] = basename( $apart );
 		}
 	}
@@ -202,7 +202,7 @@ function sd_preflight( $manifest, $fields ) {
  * installer itself. Does NOT touch the extracted site files. Returns a
  * list of array( file, ok ) rows; installer.php is removed last.
  */
-function sd_cleanup( $manifest ) {
+function flexasm_cleanup( $manifest ) {
 	$targets = array( 'database.sql', 'manifest.json' );
 	$archives = ! empty( $manifest['archives'] ) ? $manifest['archives'] : array( 'archive.zip' );
 	foreach ( $archives as $apart ) {
@@ -212,7 +212,7 @@ function sd_cleanup( $manifest ) {
 
 	$results = array();
 	foreach ( $targets as $name ) {
-		$path = SD_ROOT . '/' . $name;
+		$path = FLEXASM_ROOT . '/' . $name;
 		if ( ! is_file( $path ) ) {
 			continue; // already gone.
 		}
@@ -260,14 +260,14 @@ if ( 'deploy' === $step ) {
 		$archives = ! empty( $manifest['archives'] ) ? $manifest['archives'] : array( 'archive.zip' );
 		$extracted = 0;
 		foreach ( $archives as $apart ) {
-			$apath = SD_ROOT . '/' . basename( $apart );
+			$apath = FLEXASM_ROOT . '/' . basename( $apart );
 			if ( ! is_file( $apath ) ) {
 				$errors[] = 'Missing part: ' . htmlspecialchars( basename( $apart ) );
 				break;
 			}
 			$zip = new ZipArchive();
 			if ( $zip->open( $apath ) === true ) {
-				$zip->extractTo( SD_ROOT );
+				$zip->extractTo( FLEXASM_ROOT );
 				$zip->close();
 				$extracted++;
 			} else {
@@ -281,7 +281,7 @@ if ( 'deploy' === $step ) {
 
 		// 3) Import database.sql.
 		if ( ! $errors ) {
-			$imported = sd_import_sql( $mysqli, SD_ROOT . '/database.sql' );
+			$imported = flexasm_import_sql( $mysqli, FLEXASM_ROOT . '/database.sql' );
 			$log[]    = "Imported the database ($imported statements).";
 		}
 
@@ -302,13 +302,13 @@ if ( 'deploy' === $step ) {
 			if ( $old_path !== $new_path ) {
 				$pairs[] = array( $old_path, $new_path );
 			}
-			$changed = sd_search_replace_all( $mysqli, $pairs );
+			$changed = flexasm_search_replace_all( $mysqli, $pairs );
 			$log[]   = "Search-replace done: $changed data cells updated.";
 		}
 
 		// 5) Write wp-config.php.
 		if ( ! $errors ) {
-			sd_write_config( $new_path, $db_name, $db_user, $db_pass, $db_host, $prefix );
+			flexasm_write_config( $new_path, $db_name, $db_user, $db_pass, $db_host, $prefix );
 			$log[] = 'Created a new wp-config.php.';
 		}
 
@@ -317,7 +317,7 @@ if ( 'deploy' === $step ) {
 }
 
 /** Import the SQL file line by line (buffer until a ';' at end of line). */
-function sd_import_sql( $mysqli, $file ) {
+function flexasm_import_sql( $mysqli, $file ) {
 	$fh = fopen( $file, 'r' );
 	if ( ! $fh ) {
 		return 0;
@@ -341,7 +341,7 @@ function sd_import_sql( $mysqli, $file ) {
 }
 
 /** Walk every table/column, replace safely, and UPDATE by primary key. */
-function sd_search_replace_all( $mysqli, $pairs ) {
+function flexasm_search_replace_all( $mysqli, $pairs ) {
 	$changed = 0;
 	$tables  = array();
 	$res     = mysqli_query( $mysqli, 'SHOW TABLES' );
@@ -380,7 +380,7 @@ function sd_search_replace_all( $mysqli, $pairs ) {
 				$rep = $val;
 				foreach ( $pairs as $p ) {
 					if ( strpos( $rep, $p[0] ) !== false ) {
-						$rep = sd_replace_recursive( $p[0], $p[1], $rep );
+						$rep = flexasm_replace_recursive( $p[0], $p[1], $rep );
 					}
 				}
 				if ( $rep !== $val ) {
@@ -428,11 +428,11 @@ function sd_search_replace_all( $mysqli, $pairs ) {
 }
 
 /** Generate a new wp-config.php with random salts. */
-function sd_write_config( $path, $name, $user, $pass, $host, $prefix ) {
+function flexasm_write_config( $path, $name, $user, $pass, $host, $prefix ) {
 	$keys = array( 'AUTH_KEY','SECURE_AUTH_KEY','LOGGED_IN_KEY','NONCE_KEY','AUTH_SALT','SECURE_AUTH_SALT','LOGGED_IN_SALT','NONCE_SALT' );
 	$salt_block = '';
 	foreach ( $keys as $k ) {
-		$salt_block .= "define('$k', '" . addslashes( sd_salt() ) . "');\n";
+		$salt_block .= "define('$k', '" . addslashes( flexasm_salt() ) . "');\n";
 	}
 	$c = "<?php\n"
 		. "define('DB_NAME', '" . addslashes( $name ) . "');\n"
@@ -455,7 +455,7 @@ function sd_write_config( $path, $name, $user, $pass, $host, $prefix ) {
 /* One-click cleanup of the migration artifacts after a successful migration. */
 $cleaned = null;
 if ( 'cleanup' === $step ) {
-	$cleaned = sd_cleanup( $manifest );
+	$cleaned = flexasm_cleanup( $manifest );
 }
 
 $success = ( 'deploy' === $step && empty( $errors ) );
@@ -465,7 +465,7 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Site Cloner – Installer</title>
+<title>Flexa Site Migrator – Installer</title>
 <style>
 	body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:24px;}
 	.box{max-width:640px;margin:0 auto;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;}
@@ -493,7 +493,7 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 </head>
 <body>
 <div class="box">
-	<h1>Site Cloner</h1>
+	<h1>Flexa Site Migrator</h1>
 	<div class="sub">Install the package on staging</div>
 
 	<?php if ( $success ) : ?>

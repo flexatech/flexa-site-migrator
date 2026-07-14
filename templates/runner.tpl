@@ -1,6 +1,6 @@
 <?php
 /**
- * Site Cloner - Chunked DB Runner (staging, very large sites)
+ * Flexa Site Migrator - Chunked DB Runner (staging, very large sites)
  *
  * Does NOT boot WordPress -> no dependency on the login session / active_plugins,
  * and no fatal error while the DB is only half-imported. Authenticated with a hashed token.
@@ -30,9 +30,9 @@ register_shutdown_function( function () {
 	}
 } );
 
-define( 'SD_DIR', __DIR__ );
+define( 'FLEXASM_DIR', __DIR__ );
 
-function sd_die( $arr, $code = 200 ) {
+function flexasm_die( $arr, $code = 200 ) {
 	while ( ob_get_level() ) { ob_end_clean(); }
 	http_response_code( 200 ); // always 200 so the client can read 'message'
 	echo json_encode( $arr );
@@ -41,27 +41,27 @@ function sd_die( $arr, $code = 200 ) {
 
 /* ---- Auth: hashed token ---- */
 $token     = isset( $_POST['token'] ) ? (string) $_POST['token'] : '';
-$hash_file = SD_DIR . '/sd-token.hash';
+$hash_file = FLEXASM_DIR . '/flexasm-token.hash';
 if ( ! is_file( $hash_file ) ) {
-	sd_die( array( 'ok' => false, 'message' => 'The migration session does not exist (already completed or deleted).' ), 403 );
+	flexasm_die( array( 'ok' => false, 'message' => 'The migration session does not exist (already completed or deleted).' ), 403 );
 }
 $stored = trim( file_get_contents( $hash_file ) );
 if ( '' === $token || ! hash_equals( $stored, hash( 'sha256', $token ) ) ) {
-	sd_die( array( 'ok' => false, 'message' => 'Invalid token.' ), 403 );
+	flexasm_die( array( 'ok' => false, 'message' => 'Invalid token.' ), 403 );
 }
 
 /* ---- State ---- */
-$state_file = SD_DIR . '/sd-state.json';
+$state_file = FLEXASM_DIR . '/flexasm-state.json';
 $state      = json_decode( @file_get_contents( $state_file ), true );
 if ( ! $state ) {
-	sd_die( array( 'ok' => false, 'message' => 'Could not read state.' ), 500 );
+	flexasm_die( array( 'ok' => false, 'message' => 'Could not read state.' ), 500 );
 }
-function sd_save_state( $state ) {
-	file_put_contents( SD_DIR . '/sd-state.json', json_encode( $state ) );
+function flexasm_save_state( $state ) {
+	file_put_contents( FLEXASM_DIR . '/flexasm-state.json', json_encode( $state ) );
 }
 
 /* ---- DB credentials: parse from wp-config.php (without executing it) ---- */
-function sd_cfg( $cfg, $const ) {
+function flexasm_cfg( $cfg, $const ) {
 	if ( preg_match( "/define\(\s*['\"]" . $const . "['\"]\s*,\s*'((?:[^'\\\\]|\\\\.)*)'/", $cfg, $m ) ) {
 		return stripcslashes( $m[1] );
 	}
@@ -82,12 +82,12 @@ if ( ! is_file( $cfg_path ) ) {
 }
 $wpcfg = @file_get_contents( $cfg_path );
 if ( false === $wpcfg ) {
-	sd_die( array( 'ok' => false, 'message' => 'Could not find/read wp-config.php (tried ' . $cfg_path . ').' ) );
+	flexasm_die( array( 'ok' => false, 'message' => 'Could not find/read wp-config.php (tried ' . $cfg_path . ').' ) );
 }
-$db_name = sd_cfg( $wpcfg, 'DB_NAME' );
-$db_user = sd_cfg( $wpcfg, 'DB_USER' );
-$db_pass = sd_cfg( $wpcfg, 'DB_PASSWORD' );
-$db_host = sd_cfg( $wpcfg, 'DB_HOST' );
+$db_name = flexasm_cfg( $wpcfg, 'DB_NAME' );
+$db_user = flexasm_cfg( $wpcfg, 'DB_USER' );
+$db_pass = flexasm_cfg( $wpcfg, 'DB_PASSWORD' );
+$db_host = flexasm_cfg( $wpcfg, 'DB_HOST' );
 
 $port = null; $sock = null;
 if ( strpos( (string) $db_host, ':' ) !== false ) {
@@ -97,12 +97,12 @@ if ( strpos( (string) $db_host, ':' ) !== false ) {
 }
 
 if ( null === $db_name || null === $db_user ) {
-	sd_die( array( 'ok' => false, 'message' => 'Could not extract DB details from wp-config.php (does the password contain special characters?).' ) );
+	flexasm_die( array( 'ok' => false, 'message' => 'Could not extract DB details from wp-config.php (does the password contain special characters?).' ) );
 }
 
 $mysqli = @mysqli_connect( $db_host, $db_user, $db_pass, $db_name, $port, $sock );
 if ( ! $mysqli ) {
-	sd_die( array( 'ok' => false, 'message' => 'DB connection failed: ' . mysqli_connect_error() ) );
+	flexasm_die( array( 'ok' => false, 'message' => 'DB connection failed: ' . mysqli_connect_error() ) );
 }
 mysqli_set_charset( $mysqli, 'utf8mb4' );
 // Relax strict mode so legacy zero-date defaults (e.g. WooCommerce ActionScheduler's
@@ -111,17 +111,17 @@ mysqli_query( $mysqli, "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'" );
 mysqli_query( $mysqli, 'SET SESSION FOREIGN_KEY_CHECKS=0' );
 
 /* ---- Serialization-safe replace ---- */
-function sd_replace_recursive( $from, $to, $data, $ser = false ) {
+function flexasm_replace_recursive( $from, $to, $data, $ser = false ) {
 	try {
 		if ( is_string( $data ) && '' !== $data && ( $un = @unserialize( $data ) ) !== false ) {
-			$data = sd_replace_recursive( $from, $to, $un, true );
+			$data = flexasm_replace_recursive( $from, $to, $un, true );
 		} elseif ( is_array( $data ) ) {
 			$tmp = array();
-			foreach ( $data as $k => $v ) { $tmp[ $k ] = sd_replace_recursive( $from, $to, $v, false ); }
+			foreach ( $data as $k => $v ) { $tmp[ $k ] = flexasm_replace_recursive( $from, $to, $v, false ); }
 			$data = $tmp;
 		} elseif ( is_object( $data ) ) {
 			$tmp = clone $data;
-			foreach ( get_object_vars( $data ) as $k => $v ) { $tmp->$k = sd_replace_recursive( $from, $to, $v, false ); }
+			foreach ( get_object_vars( $data ) as $k => $v ) { $tmp->$k = flexasm_replace_recursive( $from, $to, $v, false ); }
 			$data = $tmp;
 		} elseif ( is_string( $data ) ) {
 			$data = str_replace( $from, $to, $data );
@@ -135,13 +135,13 @@ $phase = isset( $_POST['phase'] ) ? $_POST['phase'] : '';
 
 /* ================= IMPORT (by byte offset) ================= */
 if ( 'import' === $phase ) {
-	$sql_file = SD_DIR . '/' . $state['sql'];
+	$sql_file = FLEXASM_DIR . '/' . $state['sql'];
 	$size     = (int) $state['sql_size'];
 	$offset   = (int) $state['import']['offset'];
 	$budget   = 3 * 1024 * 1024; // ~3MB per chunk
 
 	$fh = fopen( $sql_file, 'r' );
-	if ( ! $fh ) { sd_die( array( 'ok' => false, 'message' => 'Could not read database.sql.' ), 500 ); }
+	if ( ! $fh ) { flexasm_die( array( 'ok' => false, 'message' => 'Could not read database.sql.' ), 500 ); }
 	fseek( $fh, $offset );
 
 	$buffer = ''; $read = 0; $done = false; $count = 0;
@@ -168,9 +168,9 @@ if ( 'import' === $phase ) {
 	$state['import']['offset'] = $done ? $size : $new_offset;
 	$state['import']['done']   = $done;
 	$state['import']['stmts']  = ( (int) ( $state['import']['stmts'] ?? 0 ) ) + $count;
-	sd_save_state( $state );
+	flexasm_save_state( $state );
 
-	sd_die( array(
+	flexasm_die( array(
 		'ok'       => true,
 		'phase'    => 'import',
 		'done'     => $done,
@@ -191,18 +191,18 @@ if ( 'replace' === $phase ) {
 			'started' => true, 'tables' => $tables, 'ti' => 0,
 			'last_pk' => null, 'offset' => 0, 'changed' => (int) ( $state['replace']['changed'] ?? 0 ),
 		);
-		sd_ensure_self_active( $mysqli, $state['prod_prefix'] );
-		sd_save_state( $state );
+		flexasm_ensure_self_active( $mysqli, $state['prod_prefix'] );
+		flexasm_save_state( $state );
 	}
 
 	$tables = $state['replace']['tables'];
 	$ti     = (int) $state['replace']['ti'];
 
 	if ( $ti >= count( $tables ) ) {
-		sd_die( array( 'ok' => true, 'phase' => 'replace', 'done' => true, 'progress' => 100, 'changed' => (int) $state['replace']['changed'] ) );
+		flexasm_die( array( 'ok' => true, 'phase' => 'replace', 'done' => true, 'progress' => 100, 'changed' => (int) $state['replace']['changed'] ) );
 	}
 
-	$pairs = sd_pairs( $state );
+	$pairs = flexasm_pairs( $state );
 	$table = $tables[ $ti ];
 
 	// Columns + primary key.
@@ -238,7 +238,7 @@ if ( 'replace' === $phase ) {
 			$rep = $val;
 			foreach ( $pairs as $p ) {
 				if ( '' !== $p[0] && strpos( $rep, $p[0] ) !== false ) {
-					$rep = sd_replace_recursive( $p[0], $p[1], $rep );
+					$rep = flexasm_replace_recursive( $p[0], $p[1], $rep );
 				}
 			}
 			if ( $rep !== $val ) { $new[ $col ] = $rep; $dirty = true; }
@@ -282,9 +282,9 @@ if ( 'replace' === $phase ) {
 	}
 
 	$all_done = ( (int) $state['replace']['ti'] >= count( $tables ) );
-	sd_save_state( $state );
+	flexasm_save_state( $state );
 
-	sd_die( array(
+	flexasm_die( array(
 		'ok'       => true,
 		'phase'    => 'replace',
 		'done'     => $all_done,
@@ -297,7 +297,7 @@ if ( 'replace' === $phase ) {
 if ( 'finalize' === $phase ) {
 	$note = '';
 	if ( $state['prod_prefix'] !== $state['stag_prefix'] ) {
-		$note = sd_update_config_prefix( $state['abspath'], $state['prod_prefix'] )
+		$note = flexasm_update_config_prefix( $state['abspath'], $state['prod_prefix'] )
 			? "Changed the table prefix in wp-config to \"{$state['prod_prefix']}\"."
 			: "⚠️ The prefixes differ ({$state['stag_prefix']} → {$state['prod_prefix']}) but wp-config.php is NOT writable. Please set it manually: \$table_prefix = '{$state['prod_prefix']}';";
 	}
@@ -313,19 +313,19 @@ if ( 'finalize' === $phase ) {
 	);
 
 	// Sensitive cleanup: delete the SQL, token, state, and the runner itself.
-	@unlink( SD_DIR . '/' . $state['sql'] );
-	@unlink( SD_DIR . '/sd-token.hash' );
-	@unlink( SD_DIR . '/sd-state.json' );
+	@unlink( FLEXASM_DIR . '/' . $state['sql'] );
+	@unlink( FLEXASM_DIR . '/flexasm-token.hash' );
+	@unlink( FLEXASM_DIR . '/flexasm-state.json' );
 	mysqli_close( $mysqli );
 	@unlink( __FILE__ );
 
-	sd_die( $result );
+	flexasm_die( $result );
 }
 
-sd_die( array( 'ok' => false, 'message' => 'Invalid phase.' ), 400 );
+flexasm_die( array( 'ok' => false, 'message' => 'Invalid phase.' ), 400 );
 
 /* ---- helpers ---- */
-function sd_pairs( $state ) {
+function flexasm_pairs( $state ) {
 	// Prefer the precomputed pairs (each domain maps both http and https).
 	if ( ! empty( $state['pairs'] ) && is_array( $state['pairs'] ) ) {
 		return $state['pairs'];
@@ -336,8 +336,8 @@ function sd_pairs( $state ) {
 	return $pairs;
 }
 
-function sd_ensure_self_active( $mysqli, $prefix ) {
-	$plugin = 'site-cloner/site-cloner.php';
+function flexasm_ensure_self_active( $mysqli, $prefix ) {
+	$plugin = 'flexa-site-migrator/flexa-site-migrator.php';
 	$table  = $prefix . 'options';
 	$res = @mysqli_query( $mysqli, "SELECT option_value FROM `$table` WHERE option_name='active_plugins' LIMIT 1" );
 	if ( ! $res ) { return; }
@@ -349,7 +349,7 @@ function sd_ensure_self_active( $mysqli, $prefix ) {
 	@mysqli_query( $mysqli, "UPDATE `$table` SET option_value='$val' WHERE option_name='active_plugins'" );
 }
 
-function sd_update_config_prefix( $abspath, $prefix ) {
+function flexasm_update_config_prefix( $abspath, $prefix ) {
 	$path = rtrim( $abspath, '/' ) . '/wp-config.php';
 	if ( ! is_writable( $path ) ) { return false; }
 	$src = file_get_contents( $path );
