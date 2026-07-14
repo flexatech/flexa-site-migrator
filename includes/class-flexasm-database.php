@@ -152,7 +152,7 @@ class Database {
 	private function write_structure( $fh, $table ) {
 		fwrite( $fh, "\n-- Table: $table\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		fwrite( $fh, 'DROP TABLE IF EXISTS ' . self::esc_id( $table ) . ";\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
-		$create = $this->wpdb->get_row( 'SHOW CREATE TABLE ' . self::esc_id( $table ), ARRAY_N ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier from SHOW TABLES (not user input); MySQL has no placeholder for identifiers.
+		$create = $this->wpdb->get_row( 'SHOW CREATE TABLE ' . self::esc_id( $table ), ARRAY_N ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier from SHOW TABLES (not user input) and backtick-escaped via esc_id(); MySQL has no placeholder for identifiers.
 		if ( isset( $create[1] ) ) {
 			fwrite( $fh, $create[1] . ";\n\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		}
