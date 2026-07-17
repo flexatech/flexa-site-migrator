@@ -76,7 +76,9 @@ class Pull {
 			foreach ( glob( $dir . '/archive*.zip' ) as $f ) { wp_delete_file( $f ); }
 			wp_delete_file( $dir . '/database.sql' );
 			wp_delete_file( $dir . '/manifest.json' );
+			// installer.php / runner.php only exist in packages built before 1.0.3.
 			wp_delete_file( $dir . '/installer.php' );
+			wp_delete_file( $dir . '/runner.php' );
 			self::json( array( 'ok' => true, 'cleaned' => true ) );
 		}
 
@@ -104,6 +106,12 @@ class Pull {
 
 		self::deny( __( 'Invalid action.', 'flexa-site-migrator' ) );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	}
+
+	/** Stream a file as a named attachment (with Range support). */
+	public static function serve_file( $path, $filename ) {
+		header( 'Content-Disposition: attachment; filename="' . str_replace( array( '"', "\r", "\n" ), '', $filename ) . '"' );
+		self::serve_range( $path );
 	}
 
 	/** Stream a file with Range support. */
@@ -269,6 +277,7 @@ class Pull {
 			throw new \Exception( esc_html__( 'Invalid package data.', 'flexa-site-migrator' ) );
 		}
 
+		Package::secure_storage_dir();
 		$dir = FLEXASM_PACKAGE_DIR . '/' . $id;
 		wp_mkdir_p( $dir );
 		file_put_contents( $dir . '/index.php', '<?php // Silence is golden.' );

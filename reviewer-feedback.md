@@ -1,157 +1,17 @@
-Guidelines
+Hi, I changed the plugin slug to "flexa-site-migrator".
 
-In addition to code quality, security and functionality, all plugins must adhere to the guidelines you accepted when submitting this plugin. Please keep them in mind when making changes: https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/.
+You changed the plugin display name to "Flexa Site Migrator".
 
-Please note that failure to follow the Plugins Directory guidelines is taken seriously and may result in the loss of your WordPress.org plugin hosting privileges.
+It's time to move forward with the plugin review "flexatech"!
 
+Your plugin is not yet ready to be approved, you are receiving this email because the volunteers have manually checked it and have found some issues in the code / functionality of your plugin.
 
-Is the name of this plugin descriptive and distinctive, and does it respect the trademarks and project names of others?
+Please check this email thoroughly, address any issues listed, test your changes, and upload a corrected version of your code if all is well.
 
-Choosing a name for a plugin can be challenging - it needs to be distinctive and meaningful, but also carefully chosen to avoid overlapping with existing plugins or inadvertently use someone else's trademark or project name in a way that could lead to confusion.
-
-📜 General plugin name/slug requirements
-
-    Plugin names and slugs must not be too generic; they could briefly describe what the plugin does.
-    Plugin names and slugs can be original and unique, even if they don’t describe the functionality directly — as long as they are recognizable and distinctive.
-    Plugin names and slugs must be distinguishable from those of other plugins to avoid confusion.
-    Plugin names and slugs must respect others' trademarks and project names. If your plugin includes a trademark or project name that you do not own, you must clearly mention it in a way that denotes that there is no affiliation.
+List of issues found
 
 
-This plugin display name(s) is/are "Site Cloner" and the slug is "site-cloner" .
-
-We asked a trained AI about common issues with plugin names and it thinks there might be a problem.
-
- ✨ The name "Site Cloner" is very generic for this type of functionality and is also too close to existing plugin and product names that already use "Site Cloner", which can confuse users.
-
-For example, for your plugin:
-
-    An alternative name may be: ✨ Flexa Staging Migrator
-    An alternative slug may be: ✨ flexa-staging-migrator
-
-
-ℹ️ These suggestions were made by the AI. Bear in mind that a skilled human, either you or a volunteer from the Plugin Review Team, may spot issues with the new suggested name.
-
-⚠️ As with the rest of the review, you should address this issue and make any necessary changes. Simply changing the name without first checking what the issue is and how you can solve it won't help most of the time. Failure to address any of the issues raised will result in your submission being rejected for failing to demonstrate the expected level of effort in resolving the issues identified during the review process.
-
-☑️ Steps to resolve this issue
-
-Choose a display name and slug that is distinctive, describes your plugin and/or uses a unique name, while respecting others’ trademarks and project names, (check for further details below) then:
-
-    Update the display name in both the readme file and plugin headers.
-    Update the slug in your plugin files, for example in the internationalization functions.
-    Reply to this email requesting a new slug reservation.
-    In addition to the changes you have made to your code, we also need to reserve and allocate the new slug that you have chosen for your submission.
-    Upload a new version via the "Add your plugin" page.
-    If you are confident that the new name is suitable, there is no need to wait for confirmation of the new slug reservation. You may see a warning regarding the 'Text Domain', as we haven't changed the slug on our side yet. That's fine.
-
-
-Also, please, don't check just this names, there are other places or resources where you may not use any trademarked (or commonly recognized) terms in a manner that that is likely to cause confusion. This includes (but is not limited to):
-
-    Your username flexatech and your display name.
-    The plugin contributor's username and display name.
-        flexatech - FlexaTech
-    The URLs of this plugin.
-    Graphic resources such as this plugin icons and banners.
-
-
-Are you the owner? If there are any issues with the trademark or project name and this is indeed an official plugin, it is likely that we have not been able to identify the current owner of the plugin as the trademark / project owner.
-Keep in mind, if you were hired as a freelance developer or a consultant specifically to create this plugin, then they must own the plugin. Being granted permission is not enough. This is for their legal protection as well as yours. They can add you as a committer to the plugin so you can manage it from your account, but the owner must be them, not a temp-employee.
-
-In order to solve this, you can do one of the following:
-
-    Prove that you legally have the right to the original name/slug.
-    Change your user email to an official one or provide us with the user account for an official owner to whom we should transfer the plugin (they can create a new account if they need to)
-
-
-Note: Should you have this plugin approved with the correct name and then go back to infringement of trademarks, we will close your plugin. Please don’t do this, even if you see other people ‘getting away with it.’ We have a lot of plugins and we’re contacting everyone in small batches to be manageable. They won’t get away with it forever, and they risk being banned from the directory. Which no one wants.
-
-ℹ️ Tips on choosing a suitable name (and avoiding back-and-forth in this process).
-
-Choosing a name for a plugin can be challenging - it needs to be distinctive and meaningful, but also carefully chosen to avoid overlapping with existing plugins or inadvertently use someone else's trademark or project name in a way that could lead to confusion.
-
-🔍️ Avoid Name Similarity
-
-In this context, by "similar" we mean something that goes beyond a letter-by-letter or word-by-word comparison. We also look into similar naming patterns, lookalike names or meanings.
-You must ensure that the name of your plugin is distinctive and does not cause confusion with others.
-
-How can you check this? Easy!
-
-    Perform a search engine query for the plugin name (Google, DuckDuckGo, Bing, ChatGPT) and parts of it.
-    If you find other plugins with "similar" names, change your plugin's name to something more distinctive and that won't cause confusion.
-    Go back to step 1 and check again, just in case.
-
-
-❌ Changing the plugin name by adding a additional letter or a generic word (Advanced, Simple, etc) will probably not solve this problem at all.
-✅ Your plugin name has to clearly stand out from other's plugins. You could try adding a coined term, your personal brand or a unique identifier at the beginning of the name. We rely on your creativity!
-
-⚖️ Avoid Trademark / Project Names Confusion
-
-Identify trademarks and project names mentioned in your plugin name "Site Cloner"and the slug "site-cloner" .
-
-To avoid potential misuse:
-
-    If a trademark or project name is used at the beginning of your plugin name/slug and you are not the owner, it could imply false affiliation.
-    If the trademark appears elsewhere in the name/slug but is not part of a clear structure indicating unaffiliation, it may still be problematic.
-    Do not use any altered forms of a trademark, such as blend words or portmanteaus.
-
-
-A safer naming pattern is to place the trademark at the end, following a phrase like "for" or "with".
-
-👀 Examples
-
-Assuming you are creating a plugin that integrates with WooCommerce and you are not WooCommerce:
-
-    ❌ "WooCommerce Prices Updater" Trademarks issue as it implies affiliation with WooCommerce.
-    ❌ "Prices Updater WooCommerce" Trademarks issue as it lacks a clear structure indicating no affiliation.
-    ❌ "Prices for WooCommerce" It is too generic.
-    ❌ "Prices for WooCommerce by flexatech". This plugin's distinguishing term shouldn't go at the end. It should be at the beginning.
-    ❌ "AB Prices for WooCommerce". The term that distinguishes this plugin should be clearly differentiating, adding a few letters is not enough.
-    ❌ "PricesPress for WooCommerce" This is considered portmanteau using the WordPress trademark.
-    ❌ "Prices Updater for WooCommerce" Regarding trademarks it avoids indicating affiliation. However, there is a similarity issue, as there are other plugins with similar names.
-    ❌ "Easy Prices Updater for WooCommerce" Similarity issue: Adding a generic word to avoid similarity won't make it sufficiently distinguishable.
-    ✅ "Priconix Sync for WooCommerce" Ok! Original, distinguishable, unique name that is also not in use by others.
-    ✅ "flexatech Prices Updater for WooCommerce" Ok! as it includes a unique identifier and clarifies unaffiliation (Ask ChatGPT)
-
-
-
-
-Have you checked for common technical issues?
-
-Please ensure that your plugin adheres to the guidelines and best practices, including the following:
-
-🔴 Use Prefixes for declarations, globals and stored data
-
-ℹ️ Why it matters: Prefixing avoid naming collisions with other themes, plugins, or WordPress core functions.
-A prefix is a string placed in front of a name to avoid collisions. It must be at least 4 characters long, feel distinct and unique to the plugin (do not use common words), and be separated by an underscore or dash.
-Please check the official WordPress docs on avoiding name collisions.
-
-🔍 Identify not prefixed names: Look for any name that is used in a place where it can create a collision.
-Type of element 	Affected elements
-Declarations 	Functions, classes, etc (if not under a namespace)
-Globals 	Global variables, namespaces, define().
-Data storage 	update_option(), set_transient(), update_post_meta(), etc.
-WordPress declarations 	add_shortcode(), register_post_type(), add_menu_page(), wp_register_script(), wp_localize_script(), add_action( 'wp_ajax_...' ), etc.
-
-If the defined name for that is not prefixed, that’s a potential issue! 🕵️
-
-🛠 Fix it: Always prefix those names, for example if your plugin is called "Site Cloner" then you could use names like these:
-
-    function sitecl_save_post(){ ... }
-    class SITECL_Admin { ... }
-    update_option( 'sitecl_options', $options );
-    register_setting( 'sitecl_settings', 'sitecl_user_id', ... );
-    define( 'SITECL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-    global $sitecl_options;
-    add_action('wp_ajax_sitecl_save_data', ... );
-    namespace flexatech\sitecloner;
-
-
-
-Other details
-
-We've detected some other details that you may want to check.
-
-## Unsafe SQL calls
+🔴️ Unsafe SQL calls
 
 When making database calls, it's highly important to protect your code from SQL injection vulnerabilities. You need to update your code to use wpdb calls and prepare() with your queries to protect them.
 
@@ -164,13 +24,93 @@ Please review the following:
 
 Example(s) from your plugin:
 
-includes/class-sd-replace.php:86 mysqli_fetch_assoc($cres);
-includes/class-sd-replace.php:130 mysqli_real_escape_string($mysqli, $u['new'][$col]);
-includes/class-sd-importer.php:290 mysqli_real_escape_string($mysqli, $prev_mode);
-includes/class-sd-importer.php:267 mysqli_query($mysqli, 'SELECT @@SESSION.sql_mode');
-includes/class-sd-replace.php:143 mysqli_real_escape_string($mysqli, $u['row'][$col]);
-includes/class-sd-replace.php:85 mysqli_query($mysqli, "SHOW COLUMNS FROM `{$table}`");
-includes/class-sd-replace.php:124 mysqli_free_result($rres);
-includes/class-sd-importer.php:261 mysqli_query($mysqli, 'SET FOREIGN_KEY_CHECKS=0');
+includes/class-flexasm-database.php:169 mysqli_real_escape_string($dbh, $value);
+includes/class-flexasm-importer.php:263 mysqli_query($mysqli, 'SET FOREIGN_KEY_CHECKS=0');
+includes/class-flexasm-replace.php:139 mysqli_real_escape_string($mysqli, $u['new'][$col]);
+includes/class-flexasm-importer.php:271 mysqli_fetch_row($mode_res);
+includes/class-flexasm-replace.php:105 mysqli_query($mysqli, 'SELECT * FROM ' . self::esc_id($table), MYSQLI_USE_RESULT);
+includes/class-flexasm-importer.php:274 mysqli_query($mysqli, "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
+includes/class-flexasm-replace.php:133 mysqli_free_result($rres);
+includes/class-flexasm-replace.php:146 mysqli_real_escape_string($mysqli, $u['row'][$pk]);
 
 ... out of a total of 23 incidences.
+
+
+🔴️ Writing data to disallowed or incorrect locations, and/or asking users to edit plugin files
+
+We cannot accept a plugin that forces (or tells) users to edit plugin files in order to function, or that writes data to locations where plugins are not supposed to write.
+
+Plugins must never write to WordPress core directories (such as wp-admin, wp-includes), to other plugins' or themes' folders, to their own plugin folder and only under certain exceptions to the site root, to wp-content or to paths outside the WordPress installation. These locations are not guaranteed to exist, to be writable, or to persist, and writing to them can break sites, be silently wiped, or expose data.
+
+Some specific reasons this is a problem:
+
+    Plugin and core folders are deleted or replaced when upgraded, so anything stored there is lost.
+    Many hosts run WordPress with read-only or restricted filesystems, or with paths that differ from the defaults. Hard-coded paths will fail there.
+    Writing outside the expected locations breaks multisite and other one-off configurations.
+
+
+It is preferable that you save your information to the database, via the Settings API, especially if it's privileged data.
+
+If that's not possible because you're uploading media files, you should use the media uploader.
+
+If you can't do either of those, you must save the data in the uploads directory, resolved at runtime with wp_upload_dir() (never a hard-coded path), creating a folder there with the slug of your plugin as name. If the data is not meant to be public, it must be protected from direct access.
+
+Writing directly to the wp-content folder or in a folder there is acceptable only when the nature of your plugin genuinely requires it. Typical examples are caching plugins, which may need drop-ins or cache files outside the uploads directory, and backup or migration plugins, which may need storage that is independent of the per-site uploads directory in multisite.
+
+Please refer to the following links:
+
+    https://developer.wordpress.org/plugins/settings/
+    https://developer.wordpress.org/reference/functions/media_handle_upload/
+    https://developer.wordpress.org/reference/functions/wp_handle_upload/
+    https://developer.wordpress.org/reference/functions/wp_upload_dir/
+
+
+Example(s) from your plugin:
+
+includes/class-flexasm-pull.php:338 fwrite($fh, $body);
+# ✨ Pulled package files, including sensitive backup contents such as database.sql, are written into a publicly reachable uploads folder without access restrictions.
+includes/class-flexasm-database.php:90 fwrite($fh, $this->header());
+# ✨ The database dump is written as database.sql inside uploads, and backup/migration dumps should not be left directly publicly accessible there.
+
+
+
+
+🔴️ Other possible issues
+
+The AI detected certain cases not classified to specific sections of this report that can be related to security, compatibility, guidelines or other potential issues.
+
+We know that the AI can be picky at times, so please review these cases carefully.
+
+If there are issues, please resolve them. That way, we won't need to expend AI tokens checking the same thing again :)
+
+From your plugin:
+
+includes/class-flexasm-package.php:143 copy(FLEXASM_PATH . 'templates/installer.tpl', $this->dir . '/installer.php');
+# ✨ Creates an executable installer.php file inside the uploads-based package directory, which can expose a public PHP entry point on servers that execute PHP there.
+
+
+
+
+👉 Continue with the review process.
+
+Read this email thoroughly.
+
+Take the time to thoroughly review and understand the issues identified. Examine the provided examples, consult the relevant documentation, and conduct any additional research necessary. The goal of our review process is to help you clearly understand the reported issues so you can resolve them effectively and prevent similar problems in future updates to your plugin.
+Note that there may be false positives - we are humans and make mistakes, we apologize if there is anything we have gotten wrong. If you have doubts you can ask us for clarification, when asking us please be clear, concise, direct and include an example.
+
+📋 Complete your checklist.
+
+✔️ I fixed all the issues in my plugin based on the feedback I received and my own review, as I know that the Plugins Team may not share all cases of the same issue. I am familiar with tools such as Plugin Check, PHPCS + WPCS, and similar utilities to help me identify problems in my code.
+✔️ I tested my updated plugin on a clean WordPress installation with WP_DEBUG set to true.
+
+    ⚠️ Do not skip this step. Testing is essential to make sure your fixes actually work and that you haven’t introduced new issues. 
+
+
+✔️ I acknowledge that this review will be rejected if I overlook the issues or fail to test my code.
+✔️ I went to "Add your plugin" and uploaded the updated version. I can continue updating the code there throughout the review process — the team will always check the latest version.
+✔️ I replied to this email. I was concise and shared any clarifications or important context that the team needed to know.
+I didn't list all the changes, as the team will review the entire plugin again and that is not necessary at all.
+
+ℹ️ To help speed up the review process, we kindly ask that you carefully verify and address all reported issues before resubmitting your code.
+
+While we try to make our reviews as exhaustive as possible we, like you, are humans and may have missed things. We appreciate your patience and understanding.

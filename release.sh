@@ -30,7 +30,7 @@ fi
 if command -v wp >/dev/null 2>&1; then
     wp i18n make-pot . "languages/${PLUGIN_SLUG}.pot" \
         --domain="${PLUGIN_SLUG}" \
-        --exclude=templates/installer.tpl,templates/runner.tpl >/dev/null 2>&1 || true
+        --exclude=templates/installer.tpl >/dev/null 2>&1 || true
 fi
 
 # Stage.

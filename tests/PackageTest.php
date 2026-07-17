@@ -42,6 +42,17 @@ final class PackageTest extends TestCase {
 		$this->assertSame( 'nonce_flexasm_build', $query['nonce'] );
 	}
 
+	public function test_file_download_url_targets_admin_ajax_with_nonce(): void {
+		$url = Package::file_download_url( 'pkg_3', 'archive-1.zip' );
+		$query = $this->query( $url );
+
+		$this->assertStringContainsString( 'admin-ajax.php', $url );
+		$this->assertSame( 'flexasm_file', $query['action'] );
+		$this->assertSame( 'pkg_3', $query['package'] );
+		$this->assertSame( 'archive-1.zip', $query['file'] );
+		$this->assertSame( 'nonce_flexasm_build', $query['nonce'] );
+	}
+
 	public function test_package_download_url_uses_the_zip_action(): void {
 		$url = Package::package_download_url( 'pkg_2' );
 		$query = $this->query( $url );

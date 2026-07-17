@@ -97,8 +97,8 @@
 		}
 		var $ul = $('#flexasm-result .flexasm-files').empty();
 		if (files.installer) { $ul.append(link(files.installer, 'installer.php')); }
-		(files.archives || []).forEach(function (url) {
-			$ul.append(link(url, url.split('/').pop()));
+		(files.archives || []).forEach(function (a) {
+			$ul.append(link(a.url, a.name));
 		});
 		if (files.database) { $ul.append(link(files.database, 'database.sql')); }
 		if (files.manifest) { $ul.append(link(files.manifest, 'manifest.json')); }
@@ -205,11 +205,8 @@
 	/* ---------------- Import (staging) ---------------- */
 
 	var impPkg = null;
-	var impRunner = null;
-	var impToken = null;
 	var impParts = [];
 	var impFilesTotal = 0;
-	var impRunnerOk = false;
 	var impInsecure = 0;
 	var impPassword = '';
 	var impLink = '';
@@ -362,16 +359,13 @@
 				if (!res.success) { return impFail(res.data && res.data.message); }
 				impParts = res.data.parts || [];
 				impFilesTotal = res.data.files_total || 0;
-				impRunner = res.data.runner_url || null;
-				impToken = res.data.token || null;
 				impStatus(sprintf(
 					/* translators: 1: number of files, 2: number of parts. */
 					__('Extracting %1$d files (%2$d parts)…', 'flexa-site-migrator'),
 					impFilesTotal, impParts.length
 				));
 				extractAllParts(0, 0, function () {
-					if (impRunner && impToken) { runDbViaRunner(); }
-					else { runDbSingleRequest(); }
+					runDbSingleRequest();
 				});
 			})
 			.fail(function () { impFail(__('Server connection error.', 'flexa-site-migrator')); });
@@ -397,65 +391,8 @@
 			.fail(function () { impFail(__('Error while extracting.', 'flexa-site-migrator')); });
 	}
 
-	// Large site: import + replace + finalize in chunks via the standalone runner.
-	function runDbViaRunner() {
-		impRunnerOk = false;
-		impStatus(__('Importing database in chunks…', 'flexa-site-migrator'));
-		runnerLoop('import', function () {
-			impStatus(__('Running search-replace in chunks…', 'flexa-site-migrator'));
-			runnerLoop('replace', function () {
-				impStatus(__('Finalizing…', 'flexa-site-migrator'));
-				$.post(impRunner, { token: impToken, phase: 'finalize' }, null, 'json')
-					.done(function (r) {
-						if (!r || !r.ok) { return impFail((r && r.message) || __('Finalize error.', 'flexa-site-migrator')); }
-						showImportDone(r);
-					})
-					.fail(function () { impFail(__('Error while finalizing.', 'flexa-site-migrator')); });
-		   });
-		});
-	}
-
-	function runnerLoop(phase, onDone) {
-		$.post(impRunner, { token: impToken, phase: phase }, null, 'json')
-			.done(function (r) {
-				if (!r || !r.ok) {
-					if (phase === 'import' && !impRunnerOk) {
-						impStatus(sprintf(
-							/* translators: %s: error message reported by the runner. */
-							__('Runner reported an error (%s) — switching to single-request import…', 'flexa-site-migrator'),
-							(r && r.message) || ''
-						));
-						return runDbSingleRequest();
-					}
-					return impFail((r && r.message) || __('Runner error.', 'flexa-site-migrator'));
-				}
-				impRunnerOk = true;
-				var p = r.progress || 0;
-				impBar('db', phase === 'import' ? Math.round(p * 0.5) : 50 + Math.round(p * 0.5));
-				if (r.done) { onDone(); }
-				else { runnerLoop(phase, onDone); }
-			})
-			.fail(function (xhr) {
-				// runner.php can't run (PHP is blocked in this folder, 404, or it returns source).
-				if (phase === 'import' && !impRunnerOk) {
-					impStatus(__('Runner couldn\'t run — switching to single-request database import…', 'flexa-site-migrator'));
-					return runDbSingleRequest();
-				}
-				impFail(runnerFailMsg(xhr, phase));
-			});
-	}
-
-	function runnerFailMsg(xhr, phase) {
-		if (xhr && xhr.responseJSON && xhr.responseJSON.message) { return xhr.responseJSON.message; }
-		var t = (xhr && xhr.responseText) ? ('' + xhr.responseText).replace(/<[^>]*>/g, ' ').trim().slice(0, 200) : '';
-		return sprintf(
-			/* translators: 1: runner phase, 2: HTTP status code, 3: extra detail (may be empty). */
-			__('Runner error (%1$s) — HTTP %2$s%3$s', 'flexa-site-migrator'),
-			phase, (xhr ? xhr.status : '?'), (t ? ': ' + t : '')
-		);
-	}
-
-	// Fallback (small site / runner can't be written): bundle into one request.
+	// Import + search-replace + finalize in one request (auth is verified at the
+	// start; splitting it would lose the login session once users/options are overwritten).
 	function runDbSingleRequest() {
 		impStatus(__('Importing database + search-replace (single request, don\'t reload the page)…', 'flexa-site-migrator'));
 		post('flexasm_import_deploy', { package: impPkg })

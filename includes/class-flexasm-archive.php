@@ -19,7 +19,6 @@ class Archive {
 
 	private $skip_dirs = array(
 		'wp-content/cache',
-		'wp-content/flexasm-packages',
 		'wp-content/uploads/backup',
 		'wp-content/upgrade',
 		'node_modules',
@@ -32,6 +31,13 @@ class Archive {
 		$this->list_file = $list_file;
 		// ABSPATH is the WP install root — the base the archive walks to package the whole site. No WP function returns the install root.
 		$this->root      = rtrim( ABSPATH, '/\\' );
+
+		// Never package the package store itself (its dumps/archives), wherever uploads lives.
+		$root_norm = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/';
+		$pkg_norm  = rtrim( str_replace( '\\', '/', FLEXASM_PACKAGE_DIR ), '/' );
+		if ( 0 === strpos( $pkg_norm, $root_norm ) ) {
+			$this->skip_dirs[] = substr( $pkg_norm, strlen( $root_norm ) );
+		}
 	}
 
 	private function part_path( $n ) {

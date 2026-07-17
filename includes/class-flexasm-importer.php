@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
  * Importer that runs on STAGING via wp-admin.
- * - Scans available packages in wp-content/flexasm-packages/.
+ * - Scans available packages in <uploads>/flexasm-packages/.
  * - Extracts files in chunks (DB untouched yet -> auth still intact).
  * - Imports DB + search-replace in a SINGLE request (auth verified at request start).
  */
@@ -13,11 +13,18 @@ class Importer {
 
 	const EXTRACT_BATCH = 300;
 
+	/** Package storage dir relative to ABSPATH (as it appears in archive entry names). */
+	private static function packages_rel_path() {
+		$root = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/'; // ABSPATH is the install root the archive entries are relative to.
+		$pkg  = rtrim( str_replace( '\\', '/', FLEXASM_PACKAGE_DIR ), '/' ) . '/';
+		return ( 0 === strpos( $pkg, $root ) ) ? substr( $pkg, strlen( $root ) ) : $pkg;
+	}
+
 	/** Files to exclude when extracting onto staging. */
 	private static function excluded( $name ) {
 		$skip = array(
 			'wp-content/plugins/flexa-site-migrator/', // don't overwrite ourselves while running
-			'wp-content/flexasm-packages/',
+			self::packages_rel_path(), // never overwrite the package store we are extracting from
 			'wp-config.php',
 			// Production cache drop-ins can cause a fatal on staging (missing Redis/Memcached…).
 			'wp-content/object-cache.php',
@@ -72,7 +79,7 @@ class Importer {
 		}
 	}
 
-	/** Step 1: prepare. List the zip parts + set up the runner for the DB part. */
+	/** Step 1: prepare. List the zip parts. */
 	public function prepare() {
 		// Archive part list (prefer the manifest, fall back to scanning the directory).
 		$names = ! empty( $this->manifest['archives'] ) ? $this->manifest['archives'] : array();
@@ -105,55 +112,11 @@ class Importer {
 			$total  += $entries;
 		}
 
-		global $wpdb;
-		$old_url  = rtrim( $this->manifest['site_url'], '/' );
-		$old_home = rtrim( $this->manifest['home_url'], '/' );
-		$old_path = rtrim( str_replace( '\\', '/', $this->manifest['abspath'] ), '/' ) . '/';
-		$new_url  = rtrim( get_site_url(), '/' );
-		// ABSPATH is this (staging) install's root — the search-replace target for the source's recorded abspath. No WP function returns the install root.
-		$new_path = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/';
-
-		// Set up the runner (chunked DB) — hashed token + state, no DB password stored.
-		$runner_url = null;
-		$token      = bin2hex( random_bytes( 32 ) );
-		$state = array(
-			'abspath'     => str_replace( '\\', '/', ABSPATH ), // WP install root, recorded so the chunked runner can search-replace paths. No WP function returns it.
-			'prod_prefix' => $this->manifest['prefix'],
-			'stag_prefix' => $wpdb->prefix,
-			'old_url'     => $old_url,
-			'old_home'    => $old_home,
-			'old_path'    => $old_path,
-			'new_url'     => $new_url,
-			'new_path'    => $new_path,
-			'sql'         => 'database.sql',
-			'sql_size'    => (int) @filesize( $this->dir . '/database.sql' ),
-			'pairs'       => Replace::build_pairs( $old_url, $new_url, $old_home, get_home_url(), $old_path, $new_path ),
-			'import'      => array( 'offset' => 0, 'done' => false, 'stmts' => 0 ),
-			'replace'     => array( 'started' => false, 'changed' => 0 ),
-		);
-
-		$ok_state = false !== file_put_contents( $this->dir . '/flexasm-state.json', wp_json_encode( $state ) );
-		$ok_hash  = false !== file_put_contents( $this->dir . '/flexasm-token.hash', hash( 'sha256', $token ) );
-		$ok_run   = copy( FLEXASM_PATH . 'templates/runner.tpl', $this->dir . '/runner.php' );
-
-		if ( $ok_state && $ok_hash && $ok_run ) {
-			@file_put_contents(
-				$this->dir . '/.htaccess',
-				"<FilesMatch \"^(flexasm-state\\.json|flexasm-token\\.hash)$\">\n"
-				. "  <IfModule mod_authz_core.c>Require all denied</IfModule>\n"
-				. "  <IfModule !mod_authz_core.c>Order allow,deny\nDeny from all</IfModule>\n"
-				. "</FilesMatch>\n"
-			);
-			$runner_url = FLEXASM_PACKAGE_URL . '/' . basename( $this->dir ) . '/runner.php';
-		}
-
 		return array(
 			'parts'       => $parts,
 			'files_total' => $total,
-			'old_url'     => $old_url,
-			'new_url'     => $new_url,
-			'runner_url'  => $runner_url,
-			'token'       => $token,
+			'old_url'     => rtrim( $this->manifest['site_url'], '/' ),
+			'new_url'     => rtrim( get_site_url(), '/' ),
 		);
 	}
 
@@ -213,9 +176,8 @@ class Importer {
 		// php.ini before a single-pass import.
 		@ignore_user_abort( true );
 
-		$mysqli       = $wpdb->dbh;
-		$prod_prefix  = $this->manifest['prefix'];
-		$stag_prefix  = $wpdb->prefix;
+		$prod_prefix = $this->manifest['prefix'];
+		$stag_prefix = $wpdb->prefix;
 
 		$old_url  = rtrim( $this->manifest['site_url'], '/' );
 		$old_home = rtrim( $this->manifest['home_url'], '/' );
@@ -225,14 +187,14 @@ class Importer {
 		$new_path = rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) . '/';
 
 		// 1) Import SQL (keep the production prefix).
-		$stmts = $this->import_sql( $mysqli, $this->dir . '/database.sql' );
+		$stmts = $this->import_sql( $this->dir . '/database.sql' );
 
 		// 2) Make sure this plugin stays active after overwriting options (so the admin page still renders).
-		$this->ensure_self_active( $mysqli, $prod_prefix );
+		$this->ensure_self_active( $prod_prefix );
 
 		// 3) Safe search-replace (each domain mapped for both http and https).
 		$pairs   = Replace::build_pairs( $old_url, $new_url, $old_home, get_home_url(), $old_path, $new_path );
-		$changed = Replace::run( $mysqli, $pairs );
+		$changed = Replace::run( $pairs );
 
 		// 4) If the prefixes differ -> update $table_prefix in the staging wp-config.php.
 		$prefix_note = '';
@@ -255,23 +217,25 @@ class Importer {
 	}
 
 	/** Import the SQL file (accumulate statements up to the trailing ';' at end of line). */
-	private function import_sql( $mysqli, $file ) {
-		$fh = fopen( $file, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
+	private function import_sql( $file ) {
+		global $wpdb;
+		$fh = fopen( $file, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- The dump is read line by line so only one statement is in memory at a time; WP_Filesystem buffers whole files.
 		if ( ! $fh ) {
 			throw new \Exception( esc_html__( 'Could not read database.sql.', 'flexa-site-migrator' ) );
 		}
-		mysqli_query( $mysqli, 'SET FOREIGN_KEY_CHECKS=0' ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
+
+		// A failing statement must not abort the whole restore (matches mysqldump's
+		// own --force behaviour); errors are suppressed for the import loop only.
+		$suppress = $wpdb->suppress_errors();
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Replaying a trusted dump created by this plugin; the statements ARE the data and have no user-input parameters to prepare.
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS=0' );
 
 		// Relax strict mode so legacy zero-date defaults (e.g. WooCommerce ActionScheduler's
 		// "datetime NOT NULL DEFAULT '0000-00-00 00:00:00'") import on MySQL 5.7+/8.0.
 		// Save the current mode and restore it afterwards (this is WP's shared connection).
-		$prev_mode = '';
-		$mode_res  = mysqli_query( $mysqli, 'SELECT @@SESSION.sql_mode' ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle; see note above.
-		if ( $mode_res ) {
-			$row       = mysqli_fetch_row( $mode_res ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_row -- Reads the session sql_mode via WP's own mysqli handle so it can be restored after the streamed import; see note above.
-			$prev_mode = is_array( $row ) ? (string) $row[0] : '';
-		}
-		mysqli_query( $mysqli, "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Streams the bulk import via WP's own mysqli handle; see note above.
+		$prev_mode = (string) $wpdb->get_var( 'SELECT @@SESSION.sql_mode' );
+		$wpdb->query( "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'" );
 
 		$buffer = '';
 		$count  = 0;
@@ -282,14 +246,17 @@ class Importer {
 			}
 			$buffer .= $line;
 			if ( substr( rtrim( $line ), -1 ) === ';' ) {
-				@mysqli_query( $mysqli, $buffer ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
+				$wpdb->query( $buffer );
 				$buffer = '';
 				$count++;
 			}
 		}
-		fclose( $fh ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Chunked stream I/O; see fopen note.
-		mysqli_query( $mysqli, 'SET FOREIGN_KEY_CHECKS=1' ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
-		mysqli_query( $mysqli, "SET SESSION sql_mode = '" . mysqli_real_escape_string( $mysqli, $prev_mode ) . "'" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Restore WP's original sql_mode on its shared connection; see note above.
+		fclose( $fh ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- See fopen note.
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS=1' );
+		$wpdb->query( $wpdb->prepare( 'SET SESSION sql_mode = %s', $prev_mode ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- It is prepared.
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		$wpdb->suppress_errors( $suppress );
 		return $count;
 	}
 
@@ -299,23 +266,26 @@ class Importer {
 	}
 
 	/** Add this plugin to active_plugins in the just-imported DB (using the production prefix). */
-	private function ensure_self_active( $mysqli, $prefix ) {
+	private function ensure_self_active( $prefix ) {
+		global $wpdb;
 		$plugin = 'flexa-site-migrator/flexa-site-migrator.php';
 		$table  = self::esc_id( $prefix . 'options' );
-		$res = @mysqli_query( $mysqli, "SELECT option_value FROM $table WHERE option_name='active_plugins' LIMIT 1" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
-		if ( ! $res ) {
+		// The prefix comes from the package manifest (not a request) and is backtick-escaped;
+		// MySQL has no placeholder for identifiers. Values go through prepare().
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Options of the just-imported DB (foreign prefix), unreachable through the WP options API.
+		$raw = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$table} WHERE option_name = %s LIMIT 1", 'active_plugins' ) );
+		if ( null === $raw ) {
 			return;
 		}
-		$row = mysqli_fetch_assoc( $res ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_assoc -- Streaming fetch on WP's own mysqli handle; see query note.
-		$list = $row ? @unserialize( $row['option_value'] ) : array();
+		$list = @unserialize( $raw );
 		if ( ! is_array( $list ) ) {
 			$list = array();
 		}
 		if ( ! in_array( $plugin, $list, true ) ) {
 			$list[] = $plugin;
 		}
-		$val = mysqli_real_escape_string( $mysqli, serialize( $list ) ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Escaping via WP's own mysqli handle ($wpdb->dbh).
-		@mysqli_query( $mysqli, "UPDATE $table SET option_value='$val' WHERE option_name='active_plugins'" ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Streams the bulk import via WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream a multi-GB dump.
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET option_value = %s WHERE option_name = %s", serialize( $list ), 'active_plugins' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- active_plugins is stored serialized by WordPress core itself.
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/** Update the $table_prefix line in the staging wp-config.php. */

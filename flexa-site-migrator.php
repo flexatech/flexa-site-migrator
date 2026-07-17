@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.2
+ * Version:     1.0.3
  * Author:      flexatech
  * License:     GPL-2.0+
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -16,13 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.2' );
+define( 'FLEXASM_VERSION', '1.0.3' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
 // Package storage directory: <uploads>/flexasm-packages (resolved via wp_upload_dir()).
+// There is intentionally no URL constant: direct web access to this directory is
+// blocked (.htaccess deny-all) and every download is streamed through WordPress.
 define( 'FLEXASM_PACKAGE_DIR', wp_upload_dir()['basedir'] . '/flexasm-packages' );
-define( 'FLEXASM_PACKAGE_URL', wp_upload_dir()['baseurl'] . '/flexasm-packages' );
 
 require_once FLEXASM_PATH . 'includes/class-flexasm-database.php';
 require_once FLEXASM_PATH . 'includes/class-flexasm-archive.php';
@@ -50,6 +51,7 @@ class Plugin {
 		add_action( 'wp_ajax_flexasm_regen_link', array( $this, 'ajax_regen_link' ) );
 		add_action( 'wp_ajax_flexasm_delete_pkg', array( $this, 'ajax_delete_pkg' ) );
 		add_action( 'wp_ajax_flexasm_installer',  array( $this, 'ajax_installer' ) );
+		add_action( 'wp_ajax_flexasm_file',       array( $this, 'ajax_file' ) );
 		add_action( 'wp_ajax_flexasm_package_zip', array( $this, 'ajax_download_package' ) );
 
 		// Import on the staging side.
@@ -212,9 +214,9 @@ class Plugin {
 	}
 
 	/**
-	 * Stream a package's installer.php as a forced download. Direct URLs to a
-	 * .php file under /uploads are blocked by most servers (nginx/Apache), so the
-	 * manual-download link 404s -> proxy the bytes through admin-ajax instead.
+	 * Stream installer.php as a forced download, straight from the plugin's own
+	 * template. It is never written into uploads (a runnable PHP file must not
+	 * live there); the user drops it next to the package files on the new host.
 	 */
 	public function ajax_installer() {
 		$this->guard();
@@ -222,17 +224,34 @@ class Plugin {
 		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) ) {
 			wp_die( esc_html__( 'Invalid package.', 'flexa-site-migrator' ), '', array( 'response' => 400 ) );
 		}
-		$file = FLEXASM_PACKAGE_DIR . '/' . $id . '/installer.php';
-		if ( ! is_file( $file ) ) {
-			wp_die( esc_html__( 'Installer not found.', 'flexa-site-migrator' ), '', array( 'response' => 404 ) );
-		}
+		$file = FLEXASM_PATH . 'templates/installer.tpl';
 		nocache_headers();
 		header( 'Content-Type: application/octet-stream' );
 		header( 'Content-Disposition: attachment; filename="installer.php"' );
 		header( 'Content-Length: ' . filesize( $file ) );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.Security.EscapeOutput.OutputNotEscaped -- Streaming the raw installer.php bytes as an octet-stream download; escaping/WP_Filesystem would corrupt the file.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.Security.EscapeOutput.OutputNotEscaped -- Streaming the raw installer bytes as an octet-stream download; escaping/WP_Filesystem would corrupt the file.
 		echo file_get_contents( $file );
 		exit;
+	}
+
+	/**
+	 * Stream one package file (archive part / database.sql / manifest.json) as a
+	 * download. The storage directory denies direct web access, so this endpoint
+	 * (nonce + manage_options, Range-aware) is the only way to fetch the files.
+	 */
+	public function ajax_file() {
+		$this->guard();
+		$id   = sanitize_text_field( wp_unslash( $_REQUEST['package'] ?? '' ) );
+		$name = basename( sanitize_text_field( wp_unslash( $_REQUEST['file'] ?? '' ) ) );
+		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $id ) || ! preg_match( '/^(archive(-\d+)?\.zip|database\.sql|manifest\.json)$/', $name ) ) {
+			wp_die( esc_html__( 'Invalid file.', 'flexa-site-migrator' ), '', array( 'response' => 400 ) );
+		}
+		$path = FLEXASM_PACKAGE_DIR . '/' . $id . '/' . $name;
+		if ( ! is_file( $path ) ) {
+			wp_die( esc_html__( 'File not found.', 'flexa-site-migrator' ), '', array( 'response' => 404 ) );
+		}
+		nocache_headers();
+		Pull::serve_file( $path, $name );
 	}
 
 	/**
@@ -250,14 +269,17 @@ class Plugin {
 		if ( ! is_dir( $dir ) ) {
 			wp_die( esc_html__( 'Package not found.', 'flexa-site-migrator' ), '', array( 'response' => 404 ) );
 		}
-		// Ship the migration files only; skip internal token/state/hidden files.
-		$skip    = array( 'flexasm-state.json', 'flexasm-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess' );
+		// Ship the migration files only; skip internal token/state/hidden files
+		// (plus installer.php/runner.php leftovers from pre-1.0.3 packages).
+		$skip    = array( 'flexasm-state.json', 'flexasm-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess', 'state.json', 'index.php', 'installer.php', 'runner.php' );
 		$entries = array();
 		foreach ( glob( $dir . '/*' ) as $f ) {
 			if ( is_file( $f ) && ! in_array( basename( $f ), $skip, true ) ) {
 				$entries[] = array( 'path' => $f, 'name' => basename( $f ) );
 			}
 		}
+		// The installer ships from the plugin template — it is never stored in uploads.
+		$entries[] = array( 'path' => FLEXASM_PATH . 'templates/installer.tpl', 'name' => 'installer.php' );
 		Zip_Stream::stream( $entries, 'flexa-site-migrator-' . $id . '.zip' );
 		exit;
 	}
@@ -351,10 +373,5 @@ class Plugin {
 
 new Plugin();
 
-// Protect the package directory with .htaccess + index on activation.
-register_activation_hook( __FILE__, function () {
-	if ( ! file_exists( FLEXASM_PACKAGE_DIR ) ) {
-		wp_mkdir_p( FLEXASM_PACKAGE_DIR );
-	}
-	file_put_contents( FLEXASM_PACKAGE_DIR . '/index.php', "<?php // Silence is golden." );
-} );
+// Create the package directory and deny all direct web access to it on activation.
+register_activation_hook( __FILE__, array( Package::class, 'secure_storage_dir' ) );

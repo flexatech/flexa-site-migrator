@@ -11,7 +11,7 @@ A plugin for migrating WordPress from **production → staging**. It creates a p
 2. Click **Create Package**. The plugin will:
    - Export the database in chunks (using `mysqldump` if available, otherwise pure PHP).
    - Compress all files in chunks (to avoid timeouts).
-3. Download **all** files in the package: `installer.php`, the `archive-*.zip` files, `database.sql`, and `manifest.json`.
+3. Download **all** files in the package: `installer.php`, the `archive-*.zip` files, `database.sql`, and `manifest.json`. Downloads are streamed through authenticated admin endpoints — the storage folder (`uploads/flexasm-packages/`) denies all direct web access.
 
 ## Installing on staging
 
@@ -27,7 +27,7 @@ No manual download/upload needed. Install the plugin on **both production and st
 
 ### Method B — Via wp-admin (package already present on staging)
 1. Install and activate the "Flexa Site Migrator" plugin on **staging**.
-2. Copy the entire package folder (`wp-content/flexasm-packages/<id>/`, which contains the `archive-*.zip` files, `database.sql`, `manifest.json`, and `installer.php`) from production to **staging**, into the matching `wp-content/flexasm-packages/` location (via FTP/File Manager). If it's the same server, you can copy directly.
+2. Copy the entire package folder (`wp-content/uploads/flexasm-packages/<id>/`, which contains the `archive-*.zip` files, `database.sql`, and `manifest.json`) from production to **staging**, into the matching `wp-content/uploads/flexasm-packages/` location (via FTP/File Manager). If it's the same server, you can copy directly.
 3. Go to **Tools → Flexa Site Migrator Import**, select the package, check the confirmation box, and click **Run Migrate**.
    - Extracting files: runs in chunks (with progress).
    - DB import + search-replace: runs in **a single request** (don't reload the page in the middle).
@@ -35,14 +35,8 @@ No manual download/upload needed. Install the plugin on **both production and st
 
 > Why the DB import is bundled into one request: when overwriting the `users`/`options` tables, splitting it up would cause the next request to lose the login session and hit a 403 partway through. Bundling into one request (with authentication checked up front) avoids this problem entirely.
 
-#### Very large sites (multi-GB databases) — automatic via runner
-When staging allows it, the plugin sets up a **standalone runner** (`runner.php`) in the package folder, and the Import page uses it automatically. The runner:
-- **Does not boot WordPress** → it doesn't depend on the login session or `active_plugins`, and won't fatal-error while the DB is mid-import.
-- **Imports by byte-offset** (~3MB/chunk) and **runs search-replace via keyset pagination** (500 rows/chunk) → each request stays short, so any DB size works without hitting `max_execution_time`.
-- Authenticates with an **SHA-256 hashed token** stored on the server (`flexasm-token.hash`); the real token only lives in the admin's browser.
-- When finished: it deletes `database.sql`, `flexasm-token.hash`, and `flexasm-state.json`, and **deletes `runner.php` itself**.
-
-If staging can't write `runner.php`, the plugin automatically falls back to the single-request approach (suitable for small/medium sites).
+#### Very large databases
+The database deploy runs in a single wp-admin request; the search-replace pass is keyset-paginated (500 rows per page) so memory stays flat. For multi-GB databases, check the **System check** panel and raise `max_execution_time`/`memory_limit` in php.ini first, or use the standalone installer (Method C), which runs outside WordPress.
 
 > Prefix: the importer keeps production's prefix and automatically updates `$table_prefix` in staging's `wp-config.php` (if different). If `wp-config.php` isn't writable, the plugin will notify you to fix it manually.
 
@@ -53,7 +47,7 @@ If staging can't write `runner.php`, the plugin automatically falls back to the 
 4. **Delete immediately** the installer/archive/sql/manifest files once you're done.
 
 ## Multi-part archives (very large sites)
-During the build, files are compressed into multiple parts — `archive-1.zip`, `archive-2.zip`, etc. — with each part closed once it exceeds ~200MB. The reason: `ZipArchive::close()` flushes all data at once, so packaging a multi-tens-of-GB site into a single file would exhaust RAM or time out. Splitting into parts keeps each zip close operation light and stable. All three import paths (standalone installer, wp-admin import, DB runner) automatically extract all the parts.
+During the build, files are compressed into multiple parts — `archive-1.zip`, `archive-2.zip`, etc. — with each part closed once it exceeds ~200MB. The reason: `ZipArchive::close()` flushes all data at once, so packaging a multi-tens-of-GB site into a single file would exhaust RAM or time out. Splitting into parts keeps each zip close operation light and stable. All import paths (standalone installer, wp-admin import, pull-by-link) automatically extract all the parts.
 
 ## Why it's "accurate"
 The most common source of errors when changing URLs is **serialized data** (widgets, settings, options). Replacing raw strings with `str_replace` corrupts the length prefixes inside serialized strings → broken data. The plugin uses a recursive **unserialize → replace → re-serialize** algorithm, so it preserves the structure intact.
@@ -61,7 +55,7 @@ The most common source of errors when changing URLs is **serialized data** (widg
 ## Notes / limitations
 - Staging gets **completely overwritten** (files + DB). Only use it with a staging site you can throw away.
 - The new `wp-config.php` is regenerated with random salts; any custom defines from the original config (cache, memory limit, etc.) must be re-added manually.
-- The `wp-content/flexasm-packages/` folder holds sensitive data (the DB dump). You should delete the package after use.
+- The `wp-content/uploads/flexasm-packages/` folder holds sensitive data (the DB dump). Direct web access to it is blocked (deny-all `.htaccess`; files are only served through authenticated endpoints), but you should still delete the package after use.
 - For very large sites (>a few GB), consider raising `memory_limit`/`max_execution_time` on staging.
 ```
 flexa-site-migrator/
@@ -76,7 +70,6 @@ flexa-site-migrator/
 ├── templates/
 │   ├── admin-page.php            # package creation UI
 │   ├── import-page.php           # import UI (staging)
-│   ├── installer.tpl             # standalone installer (for empty staging)
-│   └── runner.tpl                # chunked DB runner for very large sites (no WP boot)
+│   └── installer.tpl             # standalone installer (for empty staging; streamed on download, never stored in uploads)
 └── assets/  admin.js, admin.css
 ```

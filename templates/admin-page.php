@@ -104,9 +104,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					}
 					foreach ( $flexasm_f['archives'] as $flexasm_az ) {
 						printf(
-							'<li><a href="%1$s" download>⬇ %2$s</a></li>',
-							esc_url( $flexasm_az ),
-							esc_html( basename( $flexasm_az ) )
+							'<li><a href="%1$s" download="%2$s">⬇ %2$s</a></li>',
+							esc_url( $flexasm_az['url'] ),
+							esc_html( $flexasm_az['name'] )
 						);
 					}
 					if ( ! empty( $flexasm_f['database'] ) ) {

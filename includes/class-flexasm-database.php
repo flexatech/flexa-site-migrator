@@ -159,14 +159,16 @@ class Database {
 	}
 
 	private function write_inserts( $fh, $table, $rows ) {
-		$dbh = $this->wpdb->dbh; // mysqli handle
 		foreach ( $rows as $row ) {
 			$vals = array();
 			foreach ( $row as $value ) {
 				if ( null === $value ) {
 					$vals[] = 'NULL';
 				} else {
-					$vals[] = "'" . mysqli_real_escape_string( $dbh, $value ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Escaping a value for the streamed dump using WP's own mysqli handle ($wpdb->dbh).
+					// prepare( '%s' ) returns the value quoted and escaped; the
+					// placeholder-escape token must be stripped because this string
+					// is written to the dump file, not passed back through query().
+					$vals[] = $this->wpdb->remove_placeholder_escape( $this->wpdb->prepare( '%s', $value ) );
 				}
 			}
 			fwrite( $fh, 'INSERT INTO ' . self::esc_id( $table ) . ' VALUES (' . implode( ',', $vals ) . ");\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
