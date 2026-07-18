@@ -76,6 +76,21 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<span class="description"><?php echo esc_html( trim( $flexasm_pkg['site_url'] . ' · ' . $flexasm_pkg['created'] . ' · ' . $flexasm_pkg['size'], ' ·' ) ); ?></span>
 				</div>
 
+				<?php if ( 'ready' !== $flexasm_pkg['status'] ) : ?>
+					<p class="description">
+						<?php if ( 'cleaned' === $flexasm_pkg['status'] ) : ?>
+							ℹ️ <?php esc_html_e( 'The migration files of this package were deleted from this server after a successful pull (automatic cleanup, so the database dump does not linger here). To migrate again, create a new package.', 'flexa-site-migrator' ); ?>
+						<?php else : ?>
+							⚠️ <?php esc_html_e( 'Leftovers from a build that never finished — safe to delete.', 'flexa-site-migrator' ); ?>
+						<?php endif; ?>
+					</p>
+					<p class="flexasm-pkg-actions">
+						<button type="button" class="button flexasm-pkg-delete"><?php esc_html_e( 'Delete', 'flexa-site-migrator' ); ?></button>
+					</p>
+				</div>
+				<?php continue; ?>
+				<?php endif; ?>
+
 				<p class="flexasm-pkg-actions">
 					<?php if ( ! empty( $flexasm_pkg['files']['package'] ) ) : ?>
 						<a class="button button-primary flexasm-pkg-dlpackage" href="<?php echo esc_url( $flexasm_pkg['files']['package'] ); ?>" download>⬇ <?php esc_html_e( 'Download package (.zip)', 'flexa-site-migrator' ); ?></a>

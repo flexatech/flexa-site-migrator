@@ -3,6 +3,8 @@
  * Plugin Name: Flexa Site Migrator
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
  * Version:     1.0.3
+ * Requires at least: 6.2
+ * Requires PHP: 7.0
  * Author:      flexatech
  * License:     GPL-2.0+
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -277,6 +279,12 @@ class Plugin {
 			if ( is_file( $f ) && ! in_array( basename( $f ), $skip, true ) ) {
 				$entries[] = array( 'path' => $f, 'name' => basename( $f ) );
 			}
+		}
+		// The archives/dump are deleted after a successful pull (Pull cleanup); a
+		// stale admin page can still link here afterwards — refuse instead of
+		// shipping a zip that would only contain the installer.
+		if ( empty( $entries ) ) {
+			wp_die( esc_html__( 'The migration files of this package were removed from this server after a pull — create a new package.', 'flexa-site-migrator' ), '', array( 'response' => 410 ) );
 		}
 		// The installer ships from the plugin template — it is never stored in uploads.
 		$entries[] = array( 'path' => FLEXASM_PATH . 'templates/installer.tpl', 'name' => 'installer.php' );

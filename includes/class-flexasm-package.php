@@ -271,11 +271,35 @@ class Package {
 			return $out;
 		}
 		foreach ( glob( FLEXASM_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
+			$id = basename( $dir );
 			if ( ! file_exists( "$dir/manifest.json" ) ) {
+				// No manifest -> nothing downloadable. Either staging's post-pull
+				// cleanup removed the archives/dump/manifest (finalize ran, so a
+				// pull token exists) or the build never finished. Surface both so
+				// the leftover directory is visible and deletable from the UI.
+				if ( ! file_exists( "$dir/state.json" ) ) {
+					continue;
+				}
+				$state = json_decode( @file_get_contents( "$dir/state.json" ), true );
+				$size  = 0;
+				foreach ( glob( "$dir/*" ) as $f ) {
+					if ( is_file( $f ) ) {
+						$size += (int) @filesize( $f );
+					}
+				}
+				$out[] = array(
+					'id'        => $id,
+					'site_url'  => isset( $state['site_url'] ) ? $state['site_url'] : '',
+					'created'   => isset( $state['created'] ) ? $state['created'] : '',
+					'size'      => size_format( $size ),
+					'files'     => array( 'archives' => array() ),
+					'has_token' => false,
+					'has_pass'  => false,
+					'status'    => file_exists( "$dir/pull-token.hash" ) ? 'cleaned' : 'incomplete',
+				);
 				continue;
 			}
-			$id = basename( $dir );
-			$m  = json_decode( @file_get_contents( "$dir/manifest.json" ), true );
+			$m = json_decode( @file_get_contents( "$dir/manifest.json" ), true );
 
 			$archives = array();
 			$size     = (int) @filesize( "$dir/database.sql" );
@@ -300,6 +324,7 @@ class Package {
 				'files'     => $files,
 				'has_token' => file_exists( "$dir/pull-token.hash" ),
 				'has_pass'  => file_exists( "$dir/pull-pass.hash" ),
+				'status'    => 'ready',
 			);
 		}
 		// Newest first (ids are timestamp-prefixed).
@@ -317,6 +342,11 @@ class Package {
 	public function regenerate_link() {
 		if ( ! is_dir( $this->dir ) ) {
 			throw new \Exception( esc_html__( 'Package not found.', 'flexa-site-migrator' ) );
+		}
+		// The archives/dump/manifest are deleted after a successful pull (see
+		// Pull cleanup) — a fresh link to an emptied package would only mislead.
+		if ( ! is_file( $this->dir . '/manifest.json' ) ) {
+			throw new \Exception( esc_html__( 'The migration files of this package were removed from this server after a pull — create a new package.', 'flexa-site-migrator' ) );
 		}
 		$token = bin2hex( random_bytes( 32 ) );
 		file_put_contents( $this->dir . '/pull-token.hash', hash( 'sha256', $token ) );

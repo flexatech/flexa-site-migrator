@@ -1,7 +1,7 @@
 === Flexa Site Migrator ===
 Contributors: flexatech
 Tags: migration, staging, clone, backup, duplicate
-Requires at least: 5.0
+Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.0
 Stable tag: 1.0.3
@@ -74,8 +74,12 @@ Yes. All admin-facing strings (PHP and JavaScript) are internationalized under t
 * Security: package storage under `uploads/flexasm-packages` now denies ALL direct web access (deny-all `.htaccess`); archives, `database.sql` and `manifest.json` are streamed through authenticated admin-ajax endpoints (capability + nonce) or the hashed-token pull endpoint instead of direct URLs.
 * Security: `installer.php` is no longer written into the uploads directory — it is streamed on demand straight from the plugin's template, so no runnable PHP file ever lives in uploads.
 * Security: removed the standalone `runner.php` chunked-import mechanism (a web-executable PHP file in uploads); the database deploy always runs through the authenticated wp-admin AJAX request.
-* Change: all database work in the plugin now goes through `$wpdb` with `prepare()` — the direct `mysqli_*` calls were removed from the exporter, importer, and search-replace.
+* Change: all database work in the plugin now goes through `$wpdb` with `prepare()` — the direct `mysqli_*` calls were removed from the exporter, importer, and search-replace, and table/column identifiers are bound with the `%i` placeholder.
+* Change: the minimum supported WordPress version is now 6.2 (required for the `%i` identifier placeholder in `$wpdb->prepare()`).
 * Fix: the file archiver now excludes the package storage directory at its real (uploads-based) location, so packages no longer get zipped into themselves.
+* Fix: a build or import no longer aborts when a single AJAX request drops — chunked requests are retried up to 3 times with backoff, the pull download writes each chunk at its explicit offset so a retry can never duplicate bytes, and connection errors now report the HTTP status code.
+* Change: the standalone installer now disables its buttons and shows a spinner with a busy label while a step is running (the migration step runs in a single request and can take minutes), preventing double submits. Steps are submitted with fetch() so the page — and the busy indicator — stays visible while waiting, in every browser (a slow full-page POST would blank the page in Safari).
+* Fix: after a successful pull deletes a package's migration files from production (automatic cleanup), the package list now says so instead of offering downloads — the .zip download, pull link and pull endpoint all return a clear "create a new package" message rather than an installer-only zip. Leftover directories from cleaned-up or unfinished builds are now listed and can be deleted from the UI.
 
 = 1.0.2 =
 * Change: renamed the plugin to **Flexa Site Migrator** (slug `flexa-site-migrator`) for a distinctive, non-generic name.

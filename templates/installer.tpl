@@ -475,6 +475,11 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 	.row{display:flex;gap:12px;} .row > div{flex:1;}
 	button{margin-top:22px;width:100%;padding:12px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
 	button:hover{background:#2563eb;}
+	button:disabled{opacity:.65;cursor:default;}
+	button:disabled:hover{background:#3b82f6;}
+	.btn-sec:disabled:hover{background:#334155;}
+	.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;margin-right:8px;vertical-align:-2px;animation:fsmspin .8s linear infinite;}
+	@keyframes fsmspin{to{transform:rotate(360deg)}}
 	.err{background:#7f1d1d;border:1px solid #b91c1c;padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;}
 	.ok{background:#14532d;border:1px solid #16a34a;padding:14px;border-radius:8px;font-size:14px;}
 	.log{font-size:13px;color:#94a3b8;line-height:1.7;margin-top:10px;}
@@ -503,7 +508,7 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 		<form method="post" onsubmit="return confirm('Delete the backup/migration files from this folder? This cannot be undone.');">
 			<input type="hidden" name="step" value="cleanup">
 			<input type="hidden" name="new_url" value="<?php echo htmlspecialchars( rtrim( (string) ( $_POST['new_url'] ?? '' ), '/' ) ); ?>">
-			<button type="submit">🗑 Delete backup files now</button>
+			<button type="submit" data-busy="Deleting…">🗑 Delete backup files now</button>
 		</form>
 		<p style="margin-top:14px;"><a href="<?php echo htmlspecialchars( rtrim( (string) ( $_POST['new_url'] ?? '' ), '/' ) ); ?>/wp-admin/">→ Skip &amp; log in to wp-admin</a></p>
 
@@ -544,7 +549,7 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 				<?php foreach ( $fields as $k => $v ) : ?>
 					<input type="hidden" name="<?php echo htmlspecialchars( $k ); ?>" value="<?php echo htmlspecialchars( $v ); ?>">
 				<?php endforeach; ?>
-				<button type="submit">Start migration →</button>
+				<button type="submit" data-busy="Migrating — this can take a few minutes, do not close this tab…">Start migration →</button>
 			</form>
 		<?php else : ?>
 			<div class="err" style="margin-bottom:16px;">Please fix the items marked ✖ above, then re-check.</div>
@@ -583,10 +588,45 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 			<label>Staging directory path (ABSPATH)</label>
 			<input name="new_path" value="<?php echo htmlspecialchars( $fields['new_path'] ); ?>">
 
-			<button type="submit">Check system →</button>
+			<button type="submit" data-busy="Checking…">Check system →</button>
 		</form>
 		<p class="warn">Original URL: <code><?php echo htmlspecialchars( $manifest['site_url'] ); ?></code></p>
 	<?php endif; ?>
 </div>
+<script>
+// The deploy step imports the whole database in a single request that can take
+// minutes. Submit via fetch() instead of a page navigation: some browsers
+// (Safari) blank the page while waiting for a slow POST, which would hide any
+// in-page busy indicator. This way the page — spinner, busy label, disabled
+// buttons — stays visible the whole time, and the response replaces the
+// document only once it has fully arrived. Without JS the forms still submit
+// natively.
+function flexasmBind() {
+	document.querySelectorAll('form').forEach(function (form) {
+		form.addEventListener('submit', function (e) {
+			if (e.defaultPrevented) { return; } // e.g. the cleanup confirm() was cancelled
+			e.preventDefault();
+			if (document.body.dataset.busy) { return; }
+			document.body.dataset.busy = '1';
+			var btn = form.querySelector('button[type="submit"]');
+			if (btn) {
+				btn.innerHTML = '<span class="spin"></span>' + (btn.dataset.busy || 'Loading…');
+			}
+			document.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+			fetch(location.href, { method: 'POST', body: new FormData(form) })
+				.then(function (r) { return r.text(); })
+				.then(function (html) {
+					// Replace the whole document; inline scripts in it (this one
+					// included) run again, so the next step is bound the same way.
+					document.open();
+					document.write(html); // eslint-disable-line
+					document.close();
+				})
+				.catch(function () { window.location.reload(); });
+		});
+	});
+}
+flexasmBind();
+</script>
 </body>
 </html>
