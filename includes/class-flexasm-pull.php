@@ -71,6 +71,13 @@ class Pull {
 
 		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : 'info';
 
+		// A completed pull deletes the archives/dump/manifest (see 'cleanup'
+		// below) but the link may still be shared around afterwards — fail with
+		// a clear message instead of reporting an empty file list.
+		if ( 'cleanup' !== $action && ! is_file( $dir . '/manifest.json' ) ) {
+			self::deny( __( 'The migration files of this package were removed from this server after a pull — create a new package on production.', 'flexa-site-migrator' ) );
+		}
+
 		// Cleanup: staging calls this after pulling is done -> delete heavy/sensitive files (DB dump, archive).
 		if ( 'cleanup' === $action ) {
 			foreach ( glob( $dir . '/archive*.zip' ) as $f ) { wp_delete_file( $f ); }
@@ -308,7 +315,7 @@ class Pull {
 		return ! is_wp_error( $res );
 	}
 
-	/** Pull one chunk of a file to disk (append). */
+	/** Pull one chunk of a file to disk (positioned write at $offset). */
 	public static function download( $link, $name, $offset, $total, $verify_ssl = true, $password = '' ) {
 		if ( ! self::valid_link( $link ) ) {
 			throw new \Exception( esc_html__( 'Invalid link.', 'flexa-site-migrator' ) );
@@ -339,10 +346,15 @@ class Pull {
 		$len  = strlen( $body );
 
 		// 200 = server doesn't support Range -> returns the full file (only safe for small files).
-		$mode = ( 0 === $offset || 200 === $code ) ? 'wb' : 'ab';
+		// Write at the explicit $offset (seek, not append) so the client can safely
+		// RETRY a chunk whose response was lost after the bytes were already written.
+		$mode = ( 0 === $offset || 200 === $code ) ? 'wb' : 'cb';
 		$fh   = fopen( $target, $mode ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		if ( ! $fh ) {
 			throw new \Exception( esc_html__( 'Could not write the local file.', 'flexa-site-migrator' ) );
+		}
+		if ( 'cb' === $mode ) {
+			fseek( $fh, $offset );
 		}
 		fwrite( $fh, $body ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.
 		fclose( $fh ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Chunked Range stream I/O for multi-GB package files; WP_Filesystem buffers whole files and cannot seek.

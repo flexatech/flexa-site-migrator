@@ -9,8 +9,34 @@
 	var sdBuildPass = '';
 	var sdBuildIps = '';
 
-	function post(action, data) {
-		return $.post(FLEXASM.ajax, $.extend({ action: action, nonce: FLEXASM.nonce }, data || {}));
+	// A build/import is ~200 sequential AJAX calls; one dropped connection must
+	// not abort the whole run. Transport failures (HTTP error, parse error) are
+	// retried with backoff — application errors (success:false) are not.
+	function post(action, data, retries) {
+		retries = (retries === undefined) ? 2 : retries;
+		var dfd = $.Deferred();
+		var attempt = 0;
+		(function run() {
+			$.post(FLEXASM.ajax, $.extend({ action: action, nonce: FLEXASM.nonce }, data || {}))
+				.done(function (res) { dfd.resolve(res); })
+				.fail(function (xhr) {
+					if (attempt < retries) {
+						attempt++;
+						setTimeout(run, 1500 * attempt);
+					} else {
+						dfd.reject(xhr);
+					}
+				});
+		})();
+		return dfd.promise();
+	}
+
+	function connErr(xhr) {
+		return sprintf(
+			/* translators: %d: HTTP status code (0 = the request never reached the server). */
+			__('Server connection error (HTTP %d).', 'flexa-site-migrator'),
+			(xhr && xhr.status) || 0
+		);
 	}
 
 	function setBar(step, pct) {
@@ -34,7 +60,7 @@
 				if (res.data.done) { setBar(step, 100); onDone(); }
 				else { loopStep(action, step, onDone); }
 			})
-			.fail(function () { fail(__('Server connection error.', 'flexa-site-migrator')); });
+			.fail(function (xhr) { fail(connErr(xhr)); });
 	}
 
 	$('#flexasm-build').on('click', function () {
@@ -75,7 +101,7 @@
 					});
 				});
 			})
-			.fail(function () { fail(__('Server connection error.', 'flexa-site-migrator')); });
+			.fail(function (xhr) { fail(connErr(xhr)); });
 	});
 
 	function renderResult(data) {
@@ -168,9 +194,9 @@
 					window.alert((r && r.data && r.data.message) || __('An error occurred.', 'flexa-site-migrator'));
 				}
 			})
-			.fail(function () {
+			.fail(function (xhr) {
 				$btn.prop('disabled', false);
-				window.alert(__('Server connection error.', 'flexa-site-migrator'));
+				window.alert(connErr(xhr));
 			});
 	});
 
@@ -196,9 +222,9 @@
 					window.alert((r && r.data && r.data.message) || __('An error occurred.', 'flexa-site-migrator'));
 				}
 			})
-			.fail(function () {
+			.fail(function (xhr) {
 				$btn.prop('disabled', false);
-				window.alert(__('Server connection error.', 'flexa-site-migrator'));
+				window.alert(connErr(xhr));
 			});
 	});
 
@@ -368,7 +394,7 @@
 					runDbSingleRequest();
 				});
 			})
-			.fail(function () { impFail(__('Server connection error.', 'flexa-site-migrator')); });
+			.fail(function (xhr) { impFail(connErr(xhr)); });
 	}
 
 	function extractAllParts(pi, base, onDone) {
@@ -395,7 +421,9 @@
 	// start; splitting it would lose the login session once users/options are overwritten).
 	function runDbSingleRequest() {
 		impStatus(__('Importing database + search-replace (single request, don\'t reload the page)…', 'flexa-site-migrator'));
-		post('flexasm_import_deploy', { package: impPkg })
+		// No transport retry: the deploy overwrites the whole database in one shot —
+		// if only the response was lost, re-running the import would be a second full overwrite.
+		post('flexasm_import_deploy', { package: impPkg }, 0)
 			.done(function (r) {
 				if (!r.success) { return impFail(r.data && r.data.message); }
 				showImportDone({ stmts: r.data.statements, changed: r.data.changed, note: r.data.prefix_note, new_url: r.data.new_url });
