@@ -2,22 +2,22 @@
 # This file is distributed under the GPL-2.0+.
 msgid ""
 msgstr ""
-"Project-Id-Version: Flexa Site Migrator 1.0.2\n"
+"Project-Id-Version: Flexa Site Migrator 1.0.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flexa-site-migrator\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-14T03:33:22+00:00\n"
+"POT-Creation-Date: 2026-07-17T11:12:32+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: flexa-site-migrator\n"
 
 #. Plugin Name of the plugin
 #: flexa-site-migrator.php
-#: flexa-site-migrator.php:70
-#: flexa-site-migrator.php:71
+#: flexa-site-migrator.php:74
+#: flexa-site-migrator.php:75
 msgid "Flexa Site Migrator"
 msgstr ""
 
@@ -31,50 +31,60 @@ msgstr ""
 msgid "flexatech"
 msgstr ""
 
-#: flexa-site-migrator.php:77
+#: flexa-site-migrator.php:81
 msgid "Flexa Site Migrator – Import"
 msgstr ""
 
-#: flexa-site-migrator.php:78
+#: flexa-site-migrator.php:82
 msgid "Flexa Site Migrator Import"
 msgstr ""
 
-#: flexa-site-migrator.php:88
+#: flexa-site-migrator.php:92
 msgid "Backup"
 msgstr ""
 
-#: flexa-site-migrator.php:89
+#: flexa-site-migrator.php:93
 msgid "Restore"
 msgstr ""
 
-#: flexa-site-migrator.php:121
+#: flexa-site-migrator.php:125
 msgid "Permission denied."
 msgstr ""
 
-#: flexa-site-migrator.php:223
-#: flexa-site-migrator.php:247
+#: flexa-site-migrator.php:227
+#: flexa-site-migrator.php:268
 msgid "Invalid package."
 msgstr ""
 
-#: flexa-site-migrator.php:227
-msgid "Installer not found."
+#: flexa-site-migrator.php:249
+#: includes/class-flexasm-pull.php:109
+msgid "Invalid file."
 msgstr ""
 
-#: flexa-site-migrator.php:251
-#: includes/class-flexasm-package.php:37
-#: includes/class-flexasm-package.php:284
+#: flexa-site-migrator.php:253
+msgid "File not found."
+msgstr ""
+
+#: flexa-site-migrator.php:272
+#: includes/class-flexasm-package.php:59
+#: includes/class-flexasm-package.php:344
 msgid "Package not found."
 msgstr ""
 
-#: includes/class-flexasm-archive.php:45
+#: flexa-site-migrator.php:287
+#: includes/class-flexasm-package.php:349
+msgid "The migration files of this package were removed from this server after a pull — create a new package."
+msgstr ""
+
+#: includes/class-flexasm-archive.php:51
 msgid "Could not create the file list."
 msgstr ""
 
 #. translators: %s: zip archive file name
 #. translators: %s: archive part file name
-#: includes/class-flexasm-archive.php:95
-#: includes/class-flexasm-importer.php:100
-#: includes/class-flexasm-importer.php:175
+#: includes/class-flexasm-archive.php:101
+#: includes/class-flexasm-importer.php:107
+#: includes/class-flexasm-importer.php:138
 msgid "Could not open %s"
 msgstr ""
 
@@ -202,41 +212,41 @@ msgstr[1] ""
 msgid "OK"
 msgstr ""
 
-#: includes/class-flexasm-importer.php:66
-#: includes/class-flexasm-package.php:23
-#: includes/class-flexasm-package.php:226
+#: includes/class-flexasm-importer.php:73
+#: includes/class-flexasm-package.php:45
+#: includes/class-flexasm-package.php:259
 msgid "Invalid package ID."
 msgstr ""
 
-#: includes/class-flexasm-importer.php:71
+#: includes/class-flexasm-importer.php:78
 msgid "Could not read the package manifest."
 msgstr ""
 
 #. translators: %s: archive part file name
-#: includes/class-flexasm-importer.php:95
+#: includes/class-flexasm-importer.php:102
 msgid "Missing archive part: %s"
 msgstr ""
 
-#: includes/class-flexasm-importer.php:164
+#: includes/class-flexasm-importer.php:127
 msgid "Invalid archive part name."
 msgstr ""
 
 #. translators: %s: archive part file name
-#: includes/class-flexasm-importer.php:169
+#: includes/class-flexasm-importer.php:132
 msgid "Archive part not found: %s"
 msgstr ""
 
 #. translators: %s: table prefix
-#: includes/class-flexasm-importer.php:243
+#: includes/class-flexasm-importer.php:205
 msgid "Changed the table prefix in wp-config to \"%s\"."
 msgstr ""
 
 #. translators: %1$s: staging table prefix; %2$s: production table prefix; %3$s: production table prefix to set manually
-#: includes/class-flexasm-importer.php:245
+#: includes/class-flexasm-importer.php:207
 msgid "⚠️ Prefixes differ (%1$s → %2$s) but wp-config.php could NOT be written. Please set $table_prefix = '%3$s'; manually."
 msgstr ""
 
-#: includes/class-flexasm-importer.php:261
+#: includes/class-flexasm-importer.php:224
 msgid "Could not read database.sql."
 msgstr ""
 
@@ -257,7 +267,7 @@ msgid "The link has expired — please create a new package on production."
 msgstr ""
 
 #: includes/class-flexasm-pull.php:55
-#: includes/class-flexasm-pull.php:238
+#: includes/class-flexasm-pull.php:253
 msgid "This package is password-protected — please enter the password."
 msgstr ""
 
@@ -270,75 +280,75 @@ msgstr ""
 msgid "IP %s is not in the allowlist. Add this IP to the \"IP restriction\" field when creating the package on production."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:100
-msgid "Invalid file."
+#: includes/class-flexasm-pull.php:78
+msgid "The migration files of this package were removed from this server after a pull — create a new package on production."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:105
+#: includes/class-flexasm-pull.php:114
 msgid "Invalid action."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-flexasm-pull.php:179
+#: includes/class-flexasm-pull.php:194
 msgid "SSL error while calling production (%s). If production is a local/self-signed site (.test, .local…), enable \"Skip SSL verification\" and try again."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-flexasm-pull.php:182
+#: includes/class-flexasm-pull.php:197
 msgid "Could not reach production: %s"
 msgstr ""
 
-#: includes/class-flexasm-pull.php:191
+#: includes/class-flexasm-pull.php:206
 msgid "Invalid link (missing http/https or the flexasm_pull parameter)."
 msgstr ""
 
 #. translators: %s: underlying error message
-#: includes/class-flexasm-pull.php:207
+#: includes/class-flexasm-pull.php:222
 msgid "Still could not connect even with SSL verification off: %s"
 msgstr ""
 
-#: includes/class-flexasm-pull.php:231
+#: includes/class-flexasm-pull.php:246
 msgid "Connected, but the certificate is invalid (self-signed?). \"Skip SSL verification\" will be enabled automatically."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:232
+#: includes/class-flexasm-pull.php:247
 msgid "Connection OK, token valid."
 msgstr ""
 
 #. translators: %s: error message returned by production
-#: includes/class-flexasm-pull.php:243
+#: includes/class-flexasm-pull.php:258
 msgid "Production returned an error: %s (check the token/link)."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-flexasm-pull.php:247
+#: includes/class-flexasm-pull.php:262
 msgid "HTTP %s — invalid response."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:253
-#: includes/class-flexasm-pull.php:305
+#: includes/class-flexasm-pull.php:268
+#: includes/class-flexasm-pull.php:321
 msgid "Invalid link."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-flexasm-pull.php:264
+#: includes/class-flexasm-pull.php:279
 msgid "Production returned an error (%s). Check the link/token/password."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:269
+#: includes/class-flexasm-pull.php:284
 msgid "Invalid package data."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:309
+#: includes/class-flexasm-pull.php:325
 msgid "Invalid file name."
 msgstr ""
 
 #. translators: %s: HTTP response code
-#: includes/class-flexasm-pull.php:327
+#: includes/class-flexasm-pull.php:343
 msgid "Production returned an error during download (%s)."
 msgstr ""
 
-#: includes/class-flexasm-pull.php:336
+#: includes/class-flexasm-pull.php:354
 msgid "Could not write the local file."
 msgstr ""
 
@@ -403,7 +413,7 @@ msgid "paste the link below and click run:"
 msgstr ""
 
 #: templates/admin-page.php:48
-#: templates/admin-page.php:95
+#: templates/admin-page.php:110
 msgid "Copy"
 msgstr ""
 
@@ -420,7 +430,7 @@ msgid "Download the whole package (.zip)"
 msgstr ""
 
 #: templates/admin-page.php:57
-#: templates/admin-page.php:83
+#: templates/admin-page.php:98
 msgid "Download files separately"
 msgstr ""
 
@@ -436,23 +446,32 @@ msgstr ""
 msgid "Previously created packages are kept on disk, so you can download the files again or get a fresh pull link after reloading this page."
 msgstr ""
 
-#: templates/admin-page.php:81
-msgid "Download package (.zip)"
+#: templates/admin-page.php:82
+msgid "The migration files of this package were deleted from this server after a successful pull (automatic cleanup, so the database dump does not linger here). To migrate again, create a new package."
 msgstr ""
 
-#: templates/admin-page.php:85
-msgid "Get pull link"
+#: templates/admin-page.php:84
+msgid "Leftovers from a build that never finished — safe to delete."
 msgstr ""
 
-#: templates/admin-page.php:87
+#: templates/admin-page.php:88
+#: templates/admin-page.php:102
 msgid "Delete"
 msgstr ""
 
-#: templates/admin-page.php:89
+#: templates/admin-page.php:96
+msgid "Download package (.zip)"
+msgstr ""
+
+#: templates/admin-page.php:100
+msgid "Get pull link"
+msgstr ""
+
+#: templates/admin-page.php:104
 msgid "password-protected"
 msgstr ""
 
-#: templates/admin-page.php:97
+#: templates/admin-page.php:112
 msgid "A brand-new link was generated (valid 48h). Any link shared earlier for this package no longer works."
 msgstr ""
 
@@ -493,8 +512,8 @@ msgid "page on production. Staging will download the package and migrate automat
 msgstr ""
 
 #: templates/import-page.php:24
-#: assets/admin.js:275
-#: assets/admin.js:293
+#: assets/admin.js:298
+#: assets/admin.js:316
 msgid "Test connection"
 msgstr ""
 
@@ -571,160 +590,125 @@ msgstr ""
 msgid "Open wp-admin (log back in if needed)"
 msgstr ""
 
-#: assets/admin.js:22
-#: assets/admin.js:168
-#: assets/admin.js:196
-#: assets/admin.js:223
+#. translators: %d: HTTP status code (0 = the request never reached the server).
+#: assets/admin.js:37
+msgid "Server connection error (HTTP %d)."
+msgstr ""
+
+#: assets/admin.js:48
+#: assets/admin.js:194
+#: assets/admin.js:222
+#: assets/admin.js:246
 msgid "An error occurred."
 msgstr ""
 
-#: assets/admin.js:33
+#: assets/admin.js:59
 msgid "Database: using mysqldump (fast)…"
 msgstr ""
 
-#: assets/admin.js:37
-#: assets/admin.js:78
-#: assets/admin.js:173
-#: assets/admin.js:201
-#: assets/admin.js:377
-msgid "Server connection error."
-msgstr ""
-
-#: assets/admin.js:49
+#: assets/admin.js:75
 msgid "Scanning site…"
 msgstr ""
 
 #. translators: %d: number of database tables.
-#: assets/admin.js:57
+#: assets/admin.js:83
 msgid "Exporting database (%d table)…"
 msgid_plural "Exporting database (%d tables)…"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of files.
-#: assets/admin.js:64
+#: assets/admin.js:90
 msgid "Compressing files (%d file)…"
 msgid_plural "Compressing files (%d files)…"
 msgstr[0] ""
 msgstr[1] ""
 
-#: assets/admin.js:68
-#: assets/admin.js:407
+#: assets/admin.js:94
 msgid "Finalizing…"
 msgstr ""
 
-#: assets/admin.js:74
-#: assets/admin.js:413
+#: assets/admin.js:100
 msgid "Error while finalizing."
 msgstr ""
 
-#: assets/admin.js:91
+#: assets/admin.js:117
 msgid "The package is password-protected. Send the password to the importer through a separate channel (don't paste it alongside the link)."
 msgstr ""
 
-#: assets/admin.js:116
-#: assets/admin.js:181
+#: assets/admin.js:142
+#: assets/admin.js:207
 msgid "Copied!"
 msgstr ""
 
 #. translators: 1: current file number, 2: total number of files.
-#: assets/admin.js:136
+#: assets/admin.js:162
 msgid "Downloading %1$d/%2$d…"
 msgstr ""
 
-#: assets/admin.js:185
+#: assets/admin.js:211
 msgid "Delete this package permanently? Its files will no longer be available for download."
 msgstr ""
 
-#: assets/admin.js:253
-#: assets/admin.js:359
+#: assets/admin.js:276
+#: assets/admin.js:382
 msgid "Preparing…"
 msgstr ""
 
-#: assets/admin.js:269
+#: assets/admin.js:292
 msgid "Testing…"
 msgstr ""
 
-#: assets/admin.js:271
+#: assets/admin.js:294
 msgid "Contacting production…"
 msgstr ""
 
 #. translators: 1: status message from production, 2: number of files, 3: human-readable size.
-#: assets/admin.js:285
+#: assets/admin.js:308
 msgid "%1$s — %2$d file, %3$s."
 msgid_plural "%1$s — %2$d files, %3$s."
 msgstr[0] ""
 msgstr[1] ""
 
-#: assets/admin.js:294
-#: assets/admin.js:328
+#: assets/admin.js:317
+#: assets/admin.js:351
 msgid "Connection error to staging."
 msgstr ""
 
-#: assets/admin.js:308
+#: assets/admin.js:331
 msgid "Fetching package info from production…"
 msgstr ""
 
 #. translators: 1: number of files, 2: human-readable total size.
-#: assets/admin.js:318
+#: assets/admin.js:341
 msgid "Downloading %1$d file (%2$s)…"
 msgid_plural "Downloading %1$d files (%2$s)…"
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: file name.
-#: assets/admin.js:349
+#: assets/admin.js:372
 msgid "Error while downloading %s."
 msgstr ""
 
 #. translators: 1: number of files, 2: number of parts.
-#: assets/admin.js:369
+#: assets/admin.js:390
 msgid "Extracting %1$d files (%2$d parts)…"
 msgstr ""
 
-#: assets/admin.js:397
+#: assets/admin.js:417
 msgid "Error while extracting."
 msgstr ""
 
-#: assets/admin.js:403
-msgid "Importing database in chunks…"
-msgstr ""
-
-#: assets/admin.js:405
-msgid "Running search-replace in chunks…"
-msgstr ""
-
-#: assets/admin.js:410
-msgid "Finalize error."
-msgstr ""
-
-#. translators: %s: error message reported by the runner.
-#: assets/admin.js:425
-msgid "Runner reported an error (%s) — switching to single-request import…"
-msgstr ""
-
-#: assets/admin.js:430
-msgid "Runner error."
-msgstr ""
-
-#: assets/admin.js:441
-msgid "Runner couldn't run — switching to single-request database import…"
-msgstr ""
-
-#. translators: 1: runner phase, 2: HTTP status code, 3: extra detail (may be empty).
-#: assets/admin.js:453
-msgid "Runner error (%1$s) — HTTP %2$s%3$s"
-msgstr ""
-
-#: assets/admin.js:460
+#: assets/admin.js:423
 msgid "Importing database + search-replace (single request, don't reload the page)…"
 msgstr ""
 
-#: assets/admin.js:466
+#: assets/admin.js:431
 msgid "Error while importing database (may time out on large sites)."
 msgstr ""
 
 #. translators: 1: number of SQL statements, 2: number of updated data cells.
-#: assets/admin.js:475
+#: assets/admin.js:440
 msgid "Imported %1$d statements, updated %2$d data cells."
 msgstr ""

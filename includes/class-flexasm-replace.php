@@ -67,97 +67,143 @@ class Replace {
 		return $data;
 	}
 
-	/**
-	 * Backtick-quote a MySQL identifier (table / column name) so it is safe to
-	 * interpolate into a query. Names come from the schema (SHOW TABLES/COLUMNS),
-	 * never from a request, but we escape any embedded backtick defensively.
-	 */
-	private static function esc_id( $name ) {
-		return '`' . str_replace( '`', '``', (string) $name ) . '`';
-	}
+	const ROWS_PER_PAGE = 500;
 
 	/**
-	 * Run search-replace across all tables of a mysqli connection.
+	 * Run search-replace across all tables via $wpdb, paginated so only one page
+	 * of rows is in memory at a time (keyset on the primary key when there is a
+	 * single-column one, LIMIT/OFFSET otherwise).
 	 * $pairs = [ [from, to], ... ]. Returns the number of updated cells.
 	 */
-	public static function run( $mysqli, array $pairs ) {
+	public static function run( array $pairs ) {
+		global $wpdb;
 		$changed = 0;
-		$tables  = array();
-		$res     = mysqli_query( $mysqli, 'SHOW TABLES' ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
-		while ( $row = mysqli_fetch_row( $res ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_row -- via WP's own mysqli handle ($wpdb->dbh).
-			$tables[] = $row[0];
-		}
+		// Table/column identifiers come from the schema itself (SHOW TABLES /
+		// SHOW COLUMNS), never from a request, and are bound with the %i
+		// identifier placeholder (WP 6.2+). All values go through prepare().
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Search-replace over the just-imported database; no higher-level API exists and caching does not apply.
+		$tables = $wpdb->get_col( 'SHOW TABLES' );
 
 		foreach ( $tables as $table ) {
 			$cols = array();
-			$pk   = null;
-			$cres = mysqli_query( $mysqli, 'SHOW COLUMNS FROM ' . self::esc_id( $table ) ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
-			while ( $c = mysqli_fetch_assoc( $cres ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_assoc -- via WP's own mysqli handle ($wpdb->dbh).
+			$pks  = array();
+			foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SHOW COLUMNS FROM %i', $table ), ARRAY_A ) as $c ) {
 				$cols[] = $c['Field'];
-				if ( 'PRI' === $c['Key'] && null === $pk ) {
-					$pk = $c['Field'];
+				if ( 'PRI' === $c['Key'] ) {
+					$pks[] = $c['Field'];
 				}
 			}
 			if ( ! $cols ) {
 				continue;
 			}
+			$pk = ( 1 === count( $pks ) ) ? $pks[0] : null;
 
-			$rres = mysqli_query( $mysqli, 'SELECT * FROM ' . self::esc_id( $table ), MYSQLI_USE_RESULT ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
-			if ( ! $rres ) {
-				continue;
-			}
-			$updates = array();
-			while ( $row = mysqli_fetch_assoc( $rres ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_fetch_assoc -- via WP's own mysqli handle ($wpdb->dbh).
-				$new   = $row;
-				$dirty = false;
-				foreach ( $cols as $col ) {
-					$val = $row[ $col ];
-					if ( null === $val ) {
-						continue;
-					}
-					$rep = $val;
-					foreach ( $pairs as $p ) {
-						if ( '' !== $p[0] && strpos( $rep, $p[0] ) !== false ) {
-							$rep = self::recursive( $p[0], $p[1], $rep );
+			$last_pk = null;
+			$offset  = 0;
+			do {
+				if ( $pk && null !== $last_pk ) {
+					$sql = $wpdb->prepare(
+						'SELECT * FROM %i WHERE %i > %s ORDER BY %i ASC LIMIT %d',
+						$table,
+						$pk,
+						$last_pk,
+						$pk,
+						self::ROWS_PER_PAGE
+					);
+				} elseif ( $pk ) {
+					$sql = $wpdb->prepare(
+						'SELECT * FROM %i ORDER BY %i ASC LIMIT %d',
+						$table,
+						$pk,
+						self::ROWS_PER_PAGE
+					);
+				} else {
+					$sql = $wpdb->prepare(
+						'SELECT * FROM %i LIMIT %d OFFSET %d',
+						$table,
+						self::ROWS_PER_PAGE,
+						$offset
+					);
+				}
+				$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $sql is built exclusively by $wpdb->prepare() above (%i identifier placeholders, %s/%d values).
+				$got  = count( $rows );
+
+				foreach ( $rows as $row ) {
+					$new   = $row;
+					$dirty = false;
+					foreach ( $cols as $col ) {
+						$val = $row[ $col ];
+						if ( null === $val ) {
+							continue;
+						}
+						$rep = $val;
+						foreach ( $pairs as $p ) {
+							if ( '' !== $p[0] && strpos( $rep, $p[0] ) !== false ) {
+								$rep = self::recursive( $p[0], $p[1], $rep );
+							}
+						}
+						if ( $rep !== $val ) {
+							$new[ $col ] = $rep;
+							$dirty = true;
 						}
 					}
-					if ( $rep !== $val ) {
-						$new[ $col ] = $rep;
-						$dirty = true;
+					if ( $dirty && self::update_row( $table, $cols, $pk, $row, $new ) ) {
+						$changed++;
 					}
 				}
-				if ( $dirty ) {
-					$updates[] = array( 'row' => $row, 'new' => $new );
-				}
-			}
-			mysqli_free_result( $rres ); // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_free_result -- via WP's own mysqli handle ($wpdb->dbh).
 
-			foreach ( $updates as $u ) {
-				$sets = array();
-				foreach ( $cols as $col ) {
-					if ( $u['new'][ $col ] !== $u['row'][ $col ] ) {
-						$sets[] = self::esc_id( $col ) . "='" . mysqli_real_escape_string( $mysqli, $u['new'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
-					}
+				if ( $pk && $got > 0 ) {
+					$last_pk = $rows[ $got - 1 ][ $pk ];
 				}
-				if ( ! $sets ) {
-					continue;
-				}
-				if ( $pk && isset( $u['row'][ $pk ] ) ) {
-					$where = self::esc_id( $pk ) . "='" . mysqli_real_escape_string( $mysqli, $u['row'][ $pk ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
-				} else {
-					$conds = array();
-					foreach ( $cols as $col ) {
-						$conds[] = ( null === $u['row'][ $col ] )
-							? self::esc_id( $col ) . ' IS NULL'
-							: self::esc_id( $col ) . "='" . mysqli_real_escape_string( $mysqli, $u['row'][ $col ] ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- via WP's own mysqli handle ($wpdb->dbh).
-					}
-					$where = implode( ' AND ', $conds );
-				}
-				if ( @mysqli_query( $mysqli, 'UPDATE ' . self::esc_id( $table ) . ' SET ' . implode( ',', $sets ) . " WHERE $where LIMIT 1" ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_query -- Keyset-paginated search-replace over large tables using WP's own mysqli handle ($wpdb->dbh); $wpdb->query buffers all rows and cannot stream.
-					$changed++;
-				}
+				$offset += $got;
+			} while ( $got === self::ROWS_PER_PAGE );
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return $changed;
+	}
+
+	/** UPDATE one changed row (by primary key, or by matching every original value when there is none). */
+	private static function update_row( $table, $cols, $pk, $row, $new ) {
+		global $wpdb;
+		$sets = array();
+		$args = array( $table );
+		foreach ( $cols as $col ) {
+			if ( $new[ $col ] !== $row[ $col ] ) {
+				$sets[] = '%i = %s';
+				$args[] = $col;
+				$args[] = $new[ $col ];
 			}
 		}
-		return $changed;
+		if ( ! $sets ) {
+			return false;
+		}
+		if ( $pk && isset( $row[ $pk ] ) ) {
+			$where  = '%i = %s';
+			$args[] = $pk;
+			$args[] = $row[ $pk ];
+		} else {
+			$conds = array();
+			foreach ( $cols as $col ) {
+				if ( null === $row[ $col ] ) {
+					$conds[] = '%i IS NULL';
+					$args[]  = $col;
+				} else {
+					$conds[] = '%i = %s';
+					$args[]  = $col;
+					$args[]  = $row[ $col ];
+				}
+			}
+			$where = implode( ' AND ', $conds );
+		}
+		// The SET/WHERE fragments joined below are literal '%i = %s' / '%i IS NULL'
+		// placeholder pairs only — every identifier and every value is bound by prepare().
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return (bool) $wpdb->query(
+			$wpdb->prepare(
+				'UPDATE %i SET ' . implode( ', ', $sets ) . ' WHERE ' . $where . ' LIMIT 1',
+				$args
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 }

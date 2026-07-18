@@ -20,7 +20,6 @@ define( 'FLEXASM_VERSION', 'test' );
 define( 'FLEXASM_PATH', dirname( __DIR__ ) . '/' );
 define( 'FLEXASM_URL', 'https://example.test/wp-content/plugins/flexa-site-migrator/' );
 define( 'FLEXASM_PACKAGE_DIR', sys_get_temp_dir() . '/flexasm-tests-packages' );
-define( 'FLEXASM_PACKAGE_URL', 'https://example.test/wp-content/uploads/flexasm-packages' );
 
 /* ---- Minimal WordPress function stubs (only what the tested code touches) ---- */
 

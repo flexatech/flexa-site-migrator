@@ -107,15 +107,15 @@ class Database {
 
 			$limit  = (int) $budget; // maximum number of rows requested this time
 			$offset = (int) $offset;
-			// Table name comes from SHOW TABLES (not user input) and MySQL has no
-			// placeholder for identifiers; LIMIT/OFFSET are prepared with %d. The
-			// disable/enable block covers the whole multi-line statement.
-			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$rows = $this->wpdb->get_results(
-				$this->wpdb->prepare( 'SELECT * FROM ' . self::esc_id( $table ) . ' LIMIT %d OFFSET %d', $limit, $offset ),
+			$wpdb   = $this->wpdb;
+			// Table name comes from SHOW TABLES (not user input) and is bound with
+			// the %i identifier placeholder (WP 6.2+); LIMIT/OFFSET use %d.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chunked table export; no higher-level API exists and caching does not apply.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( 'SELECT * FROM %i LIMIT %d OFFSET %d', $table, $limit, $offset ),
 				ARRAY_A
 			);
-			// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$count = count( $rows );
 
 			if ( $count > 0 ) {
@@ -144,7 +144,11 @@ class Database {
 		return array( 'state' => $state, 'done' => $done );
 	}
 
-	/** Backtick-quote a MySQL identifier (table name from SHOW TABLES, never a request). */
+	/**
+	 * Backtick-quote a MySQL identifier for SQL text written into the dump FILE
+	 * (live queries use the %i prepare() placeholder instead). Table names come
+	 * from SHOW TABLES, never a request.
+	 */
 	private static function esc_id( $name ) {
 		return '`' . str_replace( '`', '``', (string) $name ) . '`';
 	}
@@ -152,21 +156,24 @@ class Database {
 	private function write_structure( $fh, $table ) {
 		fwrite( $fh, "\n-- Table: $table\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		fwrite( $fh, 'DROP TABLE IF EXISTS ' . self::esc_id( $table ) . ";\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
-		$create = $this->wpdb->get_row( 'SHOW CREATE TABLE ' . self::esc_id( $table ), ARRAY_N ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier from SHOW TABLES (not user input) and backtick-escaped via esc_id(); MySQL has no placeholder for identifiers.
+		$wpdb   = $this->wpdb;
+		$create = $wpdb->get_row( $wpdb->prepare( 'SHOW CREATE TABLE %i', $table ), ARRAY_N ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- SHOW CREATE TABLE is a read-only statement (the sniff matches the CREATE TABLE keyword); structure dump for the export, identifier bound with %i.
 		if ( isset( $create[1] ) ) {
 			fwrite( $fh, $create[1] . ";\n\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.
 		}
 	}
 
 	private function write_inserts( $fh, $table, $rows ) {
-		$dbh = $this->wpdb->dbh; // mysqli handle
 		foreach ( $rows as $row ) {
 			$vals = array();
 			foreach ( $row as $value ) {
 				if ( null === $value ) {
 					$vals[] = 'NULL';
 				} else {
-					$vals[] = "'" . mysqli_real_escape_string( $dbh, $value ) . "'"; // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_real_escape_string -- Escaping a value for the streamed dump using WP's own mysqli handle ($wpdb->dbh).
+					// prepare( '%s' ) returns the value quoted and escaped; the
+					// placeholder-escape token must be stripped because this string
+					// is written to the dump file, not passed back through query().
+					$vals[] = $this->wpdb->remove_placeholder_escape( $this->wpdb->prepare( '%s', $value ) );
 				}
 			}
 			fwrite( $fh, 'INSERT INTO ' . self::esc_id( $table ) . ' VALUES (' . implode( ',', $vals ) . ");\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked stream I/O; see fopen note.

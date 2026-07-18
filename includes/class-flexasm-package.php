@@ -14,8 +14,30 @@ class Package {
 	private $state;
 
 	public function __construct( $id = null ) {
-		$this->id  = $id ?: gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 8 );
+		$this->id  = $id ?: gmdate( 'Ymd_His' ) . '_' . bin2hex( random_bytes( 8 ) );
 		$this->dir = FLEXASM_PACKAGE_DIR . '/' . $this->id;
+	}
+
+	/**
+	 * Create the storage directory and block ALL direct web access to it.
+	 * Files are only ever served through admin-ajax (nonce + manage_options)
+	 * or the hashed-token pull endpoint, both of which read from disk via PHP.
+	 */
+	public static function secure_storage_dir() {
+		if ( ! is_dir( FLEXASM_PACKAGE_DIR ) ) {
+			wp_mkdir_p( FLEXASM_PACKAGE_DIR );
+		}
+		$rules = "# Flexa Site Migrator package storage — no direct access.\n"
+			. "# Files are served through WordPress (admin-ajax / token endpoint).\n"
+			. "<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n"
+			. "<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\n";
+		$ht    = FLEXASM_PACKAGE_DIR . '/.htaccess';
+		if ( ! is_file( $ht ) || file_get_contents( $ht ) !== $rules ) {
+			@file_put_contents( $ht, $rules );
+		}
+		if ( ! is_file( FLEXASM_PACKAGE_DIR . '/index.php' ) ) {
+			@file_put_contents( FLEXASM_PACKAGE_DIR . '/index.php', "<?php // Silence is golden.\n" );
+		}
 	}
 
 	public static function load( $id ) {
@@ -45,6 +67,7 @@ class Package {
 
 	/** Step 1: initialize. */
 	public function init() {
+		self::secure_storage_dir();
 		wp_mkdir_p( $this->dir );
 		file_put_contents( $this->dir . '/index.php', '<?php // Silence is golden.' );
 
@@ -123,8 +146,9 @@ class Package {
 		);
 	}
 
-	/** Step 4: create the manifest + copy the installer, then clean up. */
+	/** Step 4: create the manifest, then clean up. */
 	public function finalize( $password = '', $allow_ips = array() ) {
+		self::secure_storage_dir();
 		$parts = isset( $this->state['archive']['parts'] ) ? $this->state['archive']['parts'] : array();
 		sort( $parts );
 
@@ -140,7 +164,9 @@ class Package {
 		);
 		file_put_contents( $this->dir . '/manifest.json', wp_json_encode( $manifest, JSON_PRETTY_PRINT ) );
 
-		copy( FLEXASM_PATH . 'templates/installer.tpl', $this->dir . '/installer.php' );
+		// installer.php is intentionally NOT written to disk: a runnable PHP file
+		// must never live in the uploads tree. It is streamed straight from
+		// templates/installer.tpl by the download endpoints instead.
 		wp_delete_file( $this->list_file() );
 
 		// Pull-by-link: hashed token + one-click link for staging.
@@ -156,19 +182,11 @@ class Package {
 		if ( $has_pass ) {
 			file_put_contents( $this->dir . '/pull-pass.hash', password_hash( (string) $password, PASSWORD_DEFAULT ) );
 		}
-		@file_put_contents(
-			$this->dir . '/.htaccess',
-			"<FilesMatch \"^(pull-token\\.hash|pull-pass\\.hash|pull-meta\\.json|flexasm-token\\.hash|flexasm-state\\.json)$\">\n"
-			. "  <IfModule mod_authz_core.c>Require all denied</IfModule>\n"
-			. "  <IfModule !mod_authz_core.c>Order allow,deny\nDeny from all</IfModule>\n"
-			. "</FilesMatch>\n"
-		);
 		$pull_link = trailingslashit( home_url() ) . '?flexasm_pull=' . rawurlencode( $this->id ) . '&key=' . $pull_token;
 
-		$base = FLEXASM_PACKAGE_URL . '/' . $this->id;
-		$archive_urls = array();
+		$archives = array();
 		foreach ( $parts as $p ) {
-			$archive_urls[] = $base . '/' . $p;
+			$archives[] = array( 'name' => $p, 'url' => self::file_download_url( $this->id, $p ) );
 		}
 
 		return array(
@@ -178,25 +196,40 @@ class Package {
 			'files'     => array(
 				'package'   => self::package_download_url( $this->id ),
 				'installer' => self::installer_download_url( $this->id ),
-				'archives'  => $archive_urls,
-				'database'  => $base . '/database.sql',
-				'manifest'  => $base . '/manifest.json',
+				'archives'  => $archives,
+				'database'  => self::file_download_url( $this->id, 'database.sql' ),
+				'manifest'  => self::file_download_url( $this->id, 'manifest.json' ),
 			),
 			'dir'       => $this->dir,
 		);
 	}
 
 	/**
-	 * installer.php lives inside <uploads>/flexasm-packages and is a PHP file, so most
-	 * servers (nginx/Apache hardening) refuse direct access to it -> the manual
-	 * download 404s. Serve it through admin-ajax instead, which streams the raw
-	 * bytes as an attachment.
+	 * installer.php is streamed straight from templates/installer.tpl through
+	 * admin-ajax (it never exists on disk inside uploads).
 	 */
 	public static function installer_download_url( $id ) {
 		return add_query_arg(
 			array(
 				'action'  => 'flexasm_installer',
 				'package' => rawurlencode( $id ),
+				'nonce'   => wp_create_nonce( 'flexasm_build' ),
+			),
+			admin_url( 'admin-ajax.php' )
+		);
+	}
+
+	/**
+	 * Download URL for one package file (archive part / database.sql /
+	 * manifest.json). Direct URLs into uploads are blocked by the storage
+	 * .htaccess, so the bytes are streamed through admin-ajax instead.
+	 */
+	public static function file_download_url( $id, $name ) {
+		return add_query_arg(
+			array(
+				'action'  => 'flexasm_file',
+				'package' => rawurlencode( $id ),
+				'file'    => rawurlencode( $name ),
 				'nonce'   => wp_create_nonce( 'flexasm_build' ),
 			),
 			admin_url( 'admin-ajax.php' )
@@ -238,24 +271,50 @@ class Package {
 			return $out;
 		}
 		foreach ( glob( FLEXASM_PACKAGE_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
+			$id = basename( $dir );
 			if ( ! file_exists( "$dir/manifest.json" ) ) {
+				// No manifest -> nothing downloadable. Either staging's post-pull
+				// cleanup removed the archives/dump/manifest (finalize ran, so a
+				// pull token exists) or the build never finished. Surface both so
+				// the leftover directory is visible and deletable from the UI.
+				if ( ! file_exists( "$dir/state.json" ) ) {
+					continue;
+				}
+				$state = json_decode( @file_get_contents( "$dir/state.json" ), true );
+				$size  = 0;
+				foreach ( glob( "$dir/*" ) as $f ) {
+					if ( is_file( $f ) ) {
+						$size += (int) @filesize( $f );
+					}
+				}
+				$out[] = array(
+					'id'        => $id,
+					'site_url'  => isset( $state['site_url'] ) ? $state['site_url'] : '',
+					'created'   => isset( $state['created'] ) ? $state['created'] : '',
+					'size'      => size_format( $size ),
+					'files'     => array( 'archives' => array() ),
+					'has_token' => false,
+					'has_pass'  => false,
+					'status'    => file_exists( "$dir/pull-token.hash" ) ? 'cleaned' : 'incomplete',
+				);
 				continue;
 			}
-			$id   = basename( $dir );
-			$base = FLEXASM_PACKAGE_URL . '/' . $id;
-			$m    = json_decode( @file_get_contents( "$dir/manifest.json" ), true );
+			$m = json_decode( @file_get_contents( "$dir/manifest.json" ), true );
 
 			$archives = array();
 			$size     = (int) @filesize( "$dir/database.sql" );
 			foreach ( glob( "$dir/archive*.zip" ) as $az ) {
-				$archives[] = $base . '/' . basename( $az );
+				$archives[] = array( 'name' => basename( $az ), 'url' => self::file_download_url( $id, basename( $az ) ) );
 				$size      += (int) @filesize( $az );
 			}
 
-			$files = array( 'package' => self::package_download_url( $id ), 'archives' => $archives );
-			if ( file_exists( "$dir/installer.php" ) ) { $files['installer'] = self::installer_download_url( $id ); }
-			if ( file_exists( "$dir/database.sql" ) )  { $files['database']  = $base . '/database.sql'; }
-			$files['manifest'] = $base . '/manifest.json';
+			$files = array(
+				'package'   => self::package_download_url( $id ),
+				'archives'  => $archives,
+				'installer' => self::installer_download_url( $id ),
+			);
+			if ( file_exists( "$dir/database.sql" ) ) { $files['database'] = self::file_download_url( $id, 'database.sql' ); }
+			$files['manifest'] = self::file_download_url( $id, 'manifest.json' );
 
 			$out[] = array(
 				'id'        => $id,
@@ -265,6 +324,7 @@ class Package {
 				'files'     => $files,
 				'has_token' => file_exists( "$dir/pull-token.hash" ),
 				'has_pass'  => file_exists( "$dir/pull-pass.hash" ),
+				'status'    => 'ready',
 			);
 		}
 		// Newest first (ids are timestamp-prefixed).
@@ -282,6 +342,11 @@ class Package {
 	public function regenerate_link() {
 		if ( ! is_dir( $this->dir ) ) {
 			throw new \Exception( esc_html__( 'Package not found.', 'flexa-site-migrator' ) );
+		}
+		// The archives/dump/manifest are deleted after a successful pull (see
+		// Pull cleanup) — a fresh link to an emptied package would only mislead.
+		if ( ! is_file( $this->dir . '/manifest.json' ) ) {
+			throw new \Exception( esc_html__( 'The migration files of this package were removed from this server after a pull — create a new package.', 'flexa-site-migrator' ) );
 		}
 		$token = bin2hex( random_bytes( 32 ) );
 		file_put_contents( $this->dir . '/pull-token.hash', hash( 'sha256', $token ) );

@@ -35,9 +35,9 @@ class Health {
 		$rb = function_exists( 'random_bytes' );
 		$rows[] = array( 'random_bytes', $rb ? 'ok' : 'fail', $rb ? __( 'present', 'flexa-site-migrator' ) : __( 'missing', 'flexa-site-migrator' ), __( 'Generates security tokens', 'flexa-site-migrator' ) );
 
-		if ( ! is_dir( FLEXASM_PACKAGE_DIR ) ) {
-			wp_mkdir_p( FLEXASM_PACKAGE_DIR );
-		}
+		// Also (re)writes the deny-all .htaccess, so sites updating from an older
+		// version get the storage protection without re-activating the plugin.
+		Package::secure_storage_dir();
 		$writable = wp_is_writable( FLEXASM_PACKAGE_DIR );
 		$rows[] = array( __( 'flexasm-packages directory is writable', 'flexa-site-migrator' ), $writable ? 'ok' : 'fail', FLEXASM_PACKAGE_DIR, __( 'Where packages are stored/downloaded', 'flexa-site-migrator' ) );
 
