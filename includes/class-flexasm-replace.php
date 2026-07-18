@@ -67,15 +67,6 @@ class Replace {
 		return $data;
 	}
 
-	/**
-	 * Backtick-quote a MySQL identifier (table / column name) so it is safe to
-	 * interpolate into a query. Names come from the schema (SHOW TABLES/COLUMNS),
-	 * never from a request, but we escape any embedded backtick defensively.
-	 */
-	private static function esc_id( $name ) {
-		return '`' . str_replace( '`', '``', (string) $name ) . '`';
-	}
-
 	const ROWS_PER_PAGE = 500;
 
 	/**
@@ -87,16 +78,16 @@ class Replace {
 	public static function run( array $pairs ) {
 		global $wpdb;
 		$changed = 0;
-		// Table/column identifiers below come from the schema itself (SHOW TABLES /
-		// SHOW COLUMNS), never from a request, and are backtick-escaped via esc_id();
-		// MySQL has no placeholder for identifiers. All values go through prepare().
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// Table/column identifiers come from the schema itself (SHOW TABLES /
+		// SHOW COLUMNS), never from a request, and are bound with the %i
+		// identifier placeholder (WP 6.2+). All values go through prepare().
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Search-replace over the just-imported database; no higher-level API exists and caching does not apply.
 		$tables = $wpdb->get_col( 'SHOW TABLES' );
 
 		foreach ( $tables as $table ) {
 			$cols = array();
 			$pks  = array();
-			foreach ( (array) $wpdb->get_results( 'SHOW COLUMNS FROM ' . self::esc_id( $table ), ARRAY_A ) as $c ) {
+			foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SHOW COLUMNS FROM %i', $table ), ARRAY_A ) as $c ) {
 				$cols[] = $c['Field'];
 				if ( 'PRI' === $c['Key'] ) {
 					$pks[] = $c['Field'];
@@ -112,23 +103,29 @@ class Replace {
 			do {
 				if ( $pk && null !== $last_pk ) {
 					$sql = $wpdb->prepare(
-						'SELECT * FROM ' . self::esc_id( $table ) . ' WHERE ' . self::esc_id( $pk ) . ' > %s ORDER BY ' . self::esc_id( $pk ) . ' ASC LIMIT %d',
+						'SELECT * FROM %i WHERE %i > %s ORDER BY %i ASC LIMIT %d',
+						$table,
+						$pk,
 						$last_pk,
+						$pk,
 						self::ROWS_PER_PAGE
 					);
 				} elseif ( $pk ) {
 					$sql = $wpdb->prepare(
-						'SELECT * FROM ' . self::esc_id( $table ) . ' ORDER BY ' . self::esc_id( $pk ) . ' ASC LIMIT %d',
+						'SELECT * FROM %i ORDER BY %i ASC LIMIT %d',
+						$table,
+						$pk,
 						self::ROWS_PER_PAGE
 					);
 				} else {
 					$sql = $wpdb->prepare(
-						'SELECT * FROM ' . self::esc_id( $table ) . ' LIMIT %d OFFSET %d',
+						'SELECT * FROM %i LIMIT %d OFFSET %d',
+						$table,
 						self::ROWS_PER_PAGE,
 						$offset
 					);
 				}
-				$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
+				$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $sql is built exclusively by $wpdb->prepare() above (%i identifier placeholders, %s/%d values).
 				$got  = count( $rows );
 
 				foreach ( $rows as $row ) {
@@ -161,7 +158,7 @@ class Replace {
 				$offset += $got;
 			} while ( $got === self::ROWS_PER_PAGE );
 		}
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return $changed;
 	}
 
@@ -169,10 +166,11 @@ class Replace {
 	private static function update_row( $table, $cols, $pk, $row, $new ) {
 		global $wpdb;
 		$sets = array();
-		$args = array();
+		$args = array( $table );
 		foreach ( $cols as $col ) {
 			if ( $new[ $col ] !== $row[ $col ] ) {
-				$sets[] = self::esc_id( $col ) . ' = %s';
+				$sets[] = '%i = %s';
+				$args[] = $col;
 				$args[] = $new[ $col ];
 			}
 		}
@@ -180,27 +178,32 @@ class Replace {
 			return false;
 		}
 		if ( $pk && isset( $row[ $pk ] ) ) {
-			$where  = self::esc_id( $pk ) . ' = %s';
+			$where  = '%i = %s';
+			$args[] = $pk;
 			$args[] = $row[ $pk ];
 		} else {
 			$conds = array();
 			foreach ( $cols as $col ) {
 				if ( null === $row[ $col ] ) {
-					$conds[] = self::esc_id( $col ) . ' IS NULL';
+					$conds[] = '%i IS NULL';
+					$args[]  = $col;
 				} else {
-					$conds[] = self::esc_id( $col ) . ' = %s';
+					$conds[] = '%i = %s';
+					$args[]  = $col;
 					$args[]  = $row[ $col ];
 				}
 			}
 			$where = implode( ' AND ', $conds );
 		}
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Identifiers are schema-derived and backtick-escaped; every value is a prepare() placeholder.
+		// The SET/WHERE fragments joined below are literal '%i = %s' / '%i IS NULL'
+		// placeholder pairs only — every identifier and every value is bound by prepare().
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return (bool) $wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::esc_id( $table ) . ' SET ' . implode( ', ', $sets ) . ' WHERE ' . $where . ' LIMIT 1',
+				'UPDATE %i SET ' . implode( ', ', $sets ) . ' WHERE ' . $where . ' LIMIT 1',
 				$args
 			)
 		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 }

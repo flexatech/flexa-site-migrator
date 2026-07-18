@@ -228,7 +228,7 @@ class Importer {
 		// own --force behaviour); errors are suppressed for the import loop only.
 		$suppress = $wpdb->suppress_errors();
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Replaying a trusted dump created by this plugin; the statements ARE the data and have no user-input parameters to prepare.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Replaying a trusted dump created by this plugin; the statements ARE the data and have no user-input parameters to prepare.
 		$wpdb->query( 'SET FOREIGN_KEY_CHECKS=0' );
 
 		// Relax strict mode so legacy zero-date defaults (e.g. WooCommerce ActionScheduler's
@@ -254,26 +254,21 @@ class Importer {
 		fclose( $fh ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- See fopen note.
 		$wpdb->query( 'SET FOREIGN_KEY_CHECKS=1' );
 		$wpdb->query( $wpdb->prepare( 'SET SESSION sql_mode = %s', $prev_mode ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- It is prepared.
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		$wpdb->suppress_errors( $suppress );
 		return $count;
-	}
-
-	/** Backtick-quote a MySQL identifier so it is safe to interpolate (prefix comes from the manifest, not a request). */
-	private static function esc_id( $name ) {
-		return '`' . str_replace( '`', '``', (string) $name ) . '`';
 	}
 
 	/** Add this plugin to active_plugins in the just-imported DB (using the production prefix). */
 	private function ensure_self_active( $prefix ) {
 		global $wpdb;
 		$plugin = 'flexa-site-migrator/flexa-site-migrator.php';
-		$table  = self::esc_id( $prefix . 'options' );
-		// The prefix comes from the package manifest (not a request) and is backtick-escaped;
-		// MySQL has no placeholder for identifiers. Values go through prepare().
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Options of the just-imported DB (foreign prefix), unreachable through the WP options API.
-		$raw = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$table} WHERE option_name = %s LIMIT 1", 'active_plugins' ) );
+		$table  = $prefix . 'options';
+		// The prefix comes from the package manifest (not a request); the table
+		// identifier is bound with the %i placeholder (WP 6.2+), values with %s.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Options of the just-imported DB (foreign prefix), unreachable through the WP options API.
+		$raw = $wpdb->get_var( $wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s LIMIT 1', $table, 'active_plugins' ) );
 		if ( null === $raw ) {
 			return;
 		}
@@ -284,8 +279,8 @@ class Importer {
 		if ( ! in_array( $plugin, $list, true ) ) {
 			$list[] = $plugin;
 		}
-		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET option_value = %s WHERE option_name = %s", serialize( $list ), 'active_plugins' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- active_plugins is stored serialized by WordPress core itself.
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( $wpdb->prepare( 'UPDATE %i SET option_value = %s WHERE option_name = %s', $table, serialize( $list ), 'active_plugins' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- active_plugins is stored serialized by WordPress core itself.
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/** Update the $table_prefix line in the staging wp-config.php. */
