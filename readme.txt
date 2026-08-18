@@ -2,9 +2,9 @@
 Contributors: flexatech
 Tags: migration, staging, clone, backup, duplicate
 Requires at least: 6.2
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,12 +63,22 @@ Staging is **completely overwritten** (files and database). Only use it with a s
 
 Yes. All admin-facing strings (PHP and JavaScript) are internationalized under the `flexa-site-migrator` text domain, and a `languages/flexa-site-migrator.pot` template is included.
 
+== External services ==
+
+This plugin does not connect to any service operated by us or by a fixed third party, and it sends no data anywhere on its own.
+
+The only outbound network request it makes is to the **production site URL you paste on the staging side** (Tools → Flexa Site Migrator Import → "Pull from production via link"). When you click Test connection or Pull & Migrate, staging contacts that URL to download the migration package (site files and the database dump) you created on production. The request carries the access token from the link, and, if the package is password-protected, the password you enter (sent in a request header). No third party is involved — both ends are your own sites — and nothing is transmitted until you paste a link and start a pull.
+
 == Screenshots ==
 
 1. Build a migration package on the production site (Tools → Flexa Site Migrator).
 2. Import or pull the package on staging (Tools → Flexa Site Migrator Import).
 
 == Changelog ==
+
+= 1.0.4 =
+* Compatibility: tested up to WordPress 7.1.
+* Docs: added an "External services" section documenting the pull request to the production URL you provide (no third-party service is contacted).
 
 = 1.0.3 =
 * Security: package storage under `uploads/flexasm-packages` now denies ALL direct web access (deny-all `.htaccess`); archives, `database.sql` and `manifest.json` are streamed through authenticated admin-ajax endpoints (capability + nonce) or the hashed-token pull endpoint instead of direct URLs.
@@ -98,6 +108,9 @@ Yes. All admin-facing strings (PHP and JavaScript) are internationalized under t
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.4 =
+Confirms compatibility with WordPress 7.1 and documents the plugin's external network request in the readme.
 
 = 1.0.3 =
 Locks down the package storage directory against direct web access, stops shipping runnable PHP files into uploads, and moves all database work to $wpdb->prepare().

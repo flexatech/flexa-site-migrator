@@ -414,7 +414,7 @@
 				if (res.data.done) { onDone(); }
 				else { extractPartLoop(name, res.data.offset, base, onDone); }
 			})
-			.fail(function () { impFail(__('Error while extracting.', 'flexa-site-migrator')); });
+			.fail(function (xhr) { impFail(__('Error while extracting.', 'flexa-site-migrator') + ' ' + connErr(xhr)); });
 	}
 
 	// Import + search-replace + finalize in one request (auth is verified at the
@@ -428,7 +428,7 @@
 				if (!r.success) { return impFail(r.data && r.data.message); }
 				showImportDone({ stmts: r.data.statements, changed: r.data.changed, note: r.data.prefix_note, new_url: r.data.new_url });
 			})
-			.fail(function () { impFail(__('Error while importing database (may time out on large sites).', 'flexa-site-migrator')); });
+			.fail(function (xhr) { impFail(__('Error while importing database (may time out on large sites).', 'flexa-site-migrator') + ' ' + connErr(xhr)); });
 	}
 
 	function showImportDone(r) {

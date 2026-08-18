@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.3
+ * Version:     1.0.4
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.3' );
+define( 'FLEXASM_VERSION', '1.0.4' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
