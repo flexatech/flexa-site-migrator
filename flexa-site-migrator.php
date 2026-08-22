@@ -42,6 +42,9 @@ class Plugin {
 	private $page_hooks = array();
 
 	public function __construct() {
+		// Load bundled .mo translations (needed outside WP.org distribution — WP.org
+		// language packs load automatically, files shipped in /languages do not).
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'action_links' ) );
@@ -75,6 +78,10 @@ class Plugin {
 		add_action( 'wp_ajax_flexasm_pull_download', array( $this, 'ajax_pull_download' ) );
 		add_action( 'wp_ajax_flexasm_pull_test',     array( $this, 'ajax_pull_test' ) );
 		add_action( 'wp_ajax_flexasm_pull_cleanup',  array( $this, 'ajax_pull_cleanup' ) );
+	}
+
+	public function load_textdomain() {
+		load_plugin_textdomain( 'flexa-site-migrator', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 	}
 
 	public function menu() {

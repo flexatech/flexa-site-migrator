@@ -49,17 +49,20 @@ class Database {
 		}
 
 		$cmd = sprintf(
-			'mysqldump --no-tablespaces --skip-comments --default-character-set=%s -h%s%s -u%s -p%s %s 2>/dev/null',
+			'mysqldump --no-tablespaces --skip-comments --default-character-set=%s -h%s%s -u%s %s 2>/dev/null',
 			escapeshellarg( DB_CHARSET ?: 'utf8mb4' ),
 			escapeshellarg( $host ),
 			$port,
 			escapeshellarg( DB_USER ),
-			escapeshellarg( DB_PASSWORD ),
 			escapeshellarg( DB_NAME )
 		);
 
+		// The password travels via the environment, not the command line, so it
+		// never shows up in the process list (`ps`) while the dump runs.
+		putenv( 'MYSQL_PWD=' . DB_PASSWORD );
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Optional mysqldump fast-path; every argument is escapeshellarg()'d and built only from WP DB_* constants (no user input), and the call is skipped when shell_exec is in disable_functions.
 		$output = shell_exec( $cmd );
+		putenv( 'MYSQL_PWD' );
 		if ( $output && strpos( $output, 'CREATE TABLE' ) !== false ) {
 			file_put_contents( $this->sql_file, $this->header() . $output );
 			return true;

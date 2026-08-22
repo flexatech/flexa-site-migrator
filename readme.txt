@@ -79,6 +79,8 @@ The only outbound network request it makes is to the **production site URL you p
 = 1.0.6 =
 * Fix: the build now stops immediately with a clear message if WordPress core, a plugin, or a theme is updated on the source site while the package is being built. Previously the chunked build silently produced a torn package that mixed files from two versions (new files missing, removed files still present), which could fatal the migrated site.
 * Change: WordPress automatic updates are held off while a package build is in progress (released as soon as the build finishes, or within ~15 minutes if a build is abandoned).
+* Security: the mysqldump fast-path now passes the database password via the environment instead of the command line, so it is no longer visible in the server process list while the dump runs.
+* Fix: bundled translations in `/languages` are now loaded (`load_plugin_textdomain`), so translations work outside WordPress.org distribution too.
 
 = 1.0.5 =
 * Change: the plugin now has its own top-level admin menu **Site Migrator** (with **Export** and **Import** submenus) instead of living under Tools.
