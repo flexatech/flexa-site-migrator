@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0+.
 msgid ""
 msgstr ""
-"Project-Id-Version: Flexa Site Migrator - WordPress Migration & Staging 1.0.6\n"
+"Project-Id-Version: Flexa Site Migrator - WordPress Migration & Staging 1.0.7\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flexa-site-migrator\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-22T06:43:19+00:00\n"
+"POT-Creation-Date: 2026-08-22T09:02:59+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: flexa-site-migrator\n"
@@ -63,7 +63,7 @@ msgid "Permission denied."
 msgstr ""
 
 #: flexa-site-migrator.php:257
-#: flexa-site-migrator.php:298
+#: flexa-site-migrator.php:299
 msgid "Invalid package."
 msgstr ""
 
@@ -76,13 +76,13 @@ msgstr ""
 msgid "File not found."
 msgstr ""
 
-#: flexa-site-migrator.php:302
+#: flexa-site-migrator.php:303
 #: includes/class-flexasm-package.php:63
 #: includes/class-flexasm-package.php:387
 msgid "Package not found."
 msgstr ""
 
-#: flexa-site-migrator.php:317
+#: flexa-site-migrator.php:318
 #: includes/class-flexasm-package.php:392
 msgid "The migration files of this package were removed from this server after a pull — create a new package."
 msgstr ""
@@ -375,118 +375,124 @@ msgstr ""
 msgid "Protection password (optional):"
 msgstr ""
 
-#: templates/admin-page.php:17
+#: templates/admin-page.php:18
 msgid "Leave empty if not needed"
 msgstr ""
 
-#: templates/admin-page.php:18
-msgid "If set, the staging side must enter this password to pull the package (send it to them through a private channel, don't include it in the link)."
+#: templates/admin-page.php:19
+#: templates/import-page.php:30
+#: assets/admin.js:458
+msgid "Show password"
 msgstr ""
 
 #: templates/admin-page.php:21
+msgid "If set, the staging side must enter this password to pull the package (send it to them through a private channel, don't include it in the link)."
+msgstr ""
+
+#: templates/admin-page.php:24
 msgid "IP restriction (optional):"
 msgstr ""
 
-#: templates/admin-page.php:22
+#: templates/admin-page.php:25
 msgid "e.g. 203.0.113.5, 203.0.113.6"
 msgstr ""
 
-#: templates/admin-page.php:23
+#: templates/admin-page.php:26
 msgid "Only these IPs can pull the package. Leave empty = no restriction. Don't know the destination server's IP yet? Leave it empty, click Test connection on the destination side, and it will report the IP for you to add here."
 msgstr ""
 
-#: templates/admin-page.php:25
+#: templates/admin-page.php:28
 msgid "Create Package"
 msgstr ""
 
-#: templates/admin-page.php:30
+#: templates/admin-page.php:33
 msgid "Database"
 msgstr ""
 
-#: templates/admin-page.php:34
+#: templates/admin-page.php:37
 msgid "Files"
 msgstr ""
 
-#: templates/admin-page.php:37
+#: templates/admin-page.php:40
 msgid "Initializing…"
 msgstr ""
 
-#: templates/admin-page.php:41
+#: templates/admin-page.php:44
 msgid "Package is ready"
 msgstr ""
 
-#: templates/admin-page.php:44
+#: templates/admin-page.php:47
 msgid "Fastest way — no upload/download needed:"
 msgstr ""
 
-#: templates/admin-page.php:45
+#: templates/admin-page.php:48
 msgid "Install this plugin on staging, go to"
 msgstr ""
 
-#: templates/admin-page.php:45
+#: templates/admin-page.php:48
 msgid "paste the link below and click run:"
 msgstr ""
 
-#: templates/admin-page.php:48
-#: templates/admin-page.php:110
+#: templates/admin-page.php:51
+#: templates/admin-page.php:113
 msgid "Copy"
 msgstr ""
 
-#: templates/admin-page.php:50
+#: templates/admin-page.php:53
 msgid "The link contains a token that grants access to the package. Only share it with people you trust; delete the package after the migration is done."
 msgstr ""
 
-#: templates/admin-page.php:54
+#: templates/admin-page.php:57
 msgid "Or download the files manually (empty staging / can't connect)"
 msgstr ""
 
-#: templates/admin-page.php:56
+#: templates/admin-page.php:59
 msgid "Download the whole package (.zip)"
 msgstr ""
 
-#: templates/admin-page.php:57
-#: templates/admin-page.php:98
+#: templates/admin-page.php:60
+#: templates/admin-page.php:101
 msgid "Download files separately"
 msgstr ""
 
-#: templates/admin-page.php:59
+#: templates/admin-page.php:62
 msgid "The single .zip bundles every file; unzip it on staging, then run"
 msgstr ""
 
-#: templates/admin-page.php:69
+#: templates/admin-page.php:72
 msgid "Packages on this site"
 msgstr ""
 
-#: templates/admin-page.php:70
+#: templates/admin-page.php:73
 msgid "Previously created packages are kept on disk, so you can download the files again or get a fresh pull link after reloading this page."
 msgstr ""
 
-#: templates/admin-page.php:82
+#: templates/admin-page.php:85
 msgid "The migration files of this package were deleted from this server after a successful pull (automatic cleanup, so the database dump does not linger here). To migrate again, create a new package."
 msgstr ""
 
-#: templates/admin-page.php:84
+#: templates/admin-page.php:87
 msgid "Leftovers from a build that never finished — safe to delete."
 msgstr ""
 
-#: templates/admin-page.php:88
-#: templates/admin-page.php:102
+#: templates/admin-page.php:91
+#: templates/admin-page.php:105
 msgid "Delete"
 msgstr ""
 
-#: templates/admin-page.php:96
+#: templates/admin-page.php:99
 msgid "Download package (.zip)"
 msgstr ""
 
-#: templates/admin-page.php:100
+#: templates/admin-page.php:103
 msgid "Get pull link"
 msgstr ""
 
-#: templates/admin-page.php:104
+#: templates/admin-page.php:107
 msgid "password-protected"
 msgstr ""
 
-#: templates/admin-page.php:112
+#: templates/admin-page.php:115
 msgid "A brand-new link was generated (valid 48h). Any link shared earlier for this package no longer works."
 msgstr ""
 
@@ -532,76 +538,76 @@ msgstr ""
 msgid "Test connection"
 msgstr ""
 
-#: templates/import-page.php:28
+#: templates/import-page.php:29
 msgid "Password (if the package has one)"
 msgstr ""
 
-#: templates/import-page.php:31
+#: templates/import-page.php:34
 msgid "Skip SSL verification (only for local/self-signed production:"
 msgstr ""
 
-#: templates/import-page.php:34
-#: templates/import-page.php:61
+#: templates/import-page.php:37
+#: templates/import-page.php:64
 msgid "I understand staging will be completely overwritten."
 msgstr ""
 
-#: templates/import-page.php:36
+#: templates/import-page.php:39
 msgid "Pull &amp; Migrate"
 msgstr ""
 
-#: templates/import-page.php:41
+#: templates/import-page.php:44
 msgid "Or select a package already on staging"
 msgstr ""
 
-#: templates/import-page.php:42
+#: templates/import-page.php:45
 msgid "Copy the package folder into"
 msgstr ""
 
-#: templates/import-page.php:42
+#: templates/import-page.php:45
 msgid "(via FTP/File Manager), then reload this page."
 msgstr ""
 
-#: templates/import-page.php:44
+#: templates/import-page.php:47
 msgid "No packages found in"
 msgstr ""
 
-#: templates/import-page.php:47
+#: templates/import-page.php:50
 msgid "Package"
 msgstr ""
 
-#: templates/import-page.php:47
+#: templates/import-page.php:50
 msgid "Source site"
 msgstr ""
 
-#: templates/import-page.php:47
+#: templates/import-page.php:50
 msgid "Created"
 msgstr ""
 
-#: templates/import-page.php:47
+#: templates/import-page.php:50
 msgid "Size"
 msgstr ""
 
-#: templates/import-page.php:63
+#: templates/import-page.php:66
 msgid "Run Migrate"
 msgstr ""
 
-#: templates/import-page.php:70
+#: templates/import-page.php:73
 msgid "Downloading package from production"
 msgstr ""
 
-#: templates/import-page.php:74
+#: templates/import-page.php:77
 msgid "Extracting files"
 msgstr ""
 
-#: templates/import-page.php:78
+#: templates/import-page.php:81
 msgid "Import database + search-replace"
 msgstr ""
 
-#: templates/import-page.php:85
+#: templates/import-page.php:88
 msgid "Migration complete"
 msgstr ""
 
-#: templates/import-page.php:87
+#: templates/import-page.php:90
 msgid "Open wp-admin (log back in if needed)"
 msgstr ""
 
@@ -726,4 +732,8 @@ msgstr ""
 #. translators: 1: number of SQL statements, 2: number of updated data cells.
 #: assets/admin.js:440
 msgid "Imported %1$d statements, updated %2$d data cells."
+msgstr ""
+
+#: assets/admin.js:458
+msgid "Hide password"
 msgstr ""

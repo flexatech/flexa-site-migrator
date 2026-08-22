@@ -25,7 +25,10 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 		</div>
 		<div id="flexasm-pull-testresult" class="flexasm-testresult" style="display:none;"></div>
 		<div class="flexasm-pull-row" style="margin-top:8px;">
-			<input type="password" id="flexasm-pull-password" placeholder="<?php esc_attr_e( 'Password (if the package has one)', 'flexa-site-migrator' ); ?>" autocomplete="off">
+			<span class="flexasm-pw-wrap">
+				<input type="password" id="flexasm-pull-password" placeholder="<?php esc_attr_e( 'Password (if the package has one)', 'flexa-site-migrator' ); ?>" autocomplete="off">
+				<button type="button" class="flexasm-pw-toggle" aria-label="<?php esc_attr_e( 'Show password', 'flexa-site-migrator' ); ?>"><span class="dashicons dashicons-visibility" aria-hidden="true"></span></button>
+			</span>
 		</div>
 		<p style="margin-top:10px;">
 			<label><input type="checkbox" id="flexasm-pull-insecure"> <?php esc_html_e( 'Skip SSL verification (only for local/self-signed production:', 'flexa-site-migrator' ); ?> <code>.test</code>, <code>.local</code>…)</label>

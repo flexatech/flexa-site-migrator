@@ -14,7 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	<div class="flexasm-card">
 		<p style="margin-top:0;">
 			<label for="flexasm-build-pass"><?php esc_html_e( 'Protection password (optional):', 'flexa-site-migrator' ); ?></label><br>
-			<input type="text" id="flexasm-build-pass" class="regular-text" placeholder="<?php esc_attr_e( 'Leave empty if not needed', 'flexa-site-migrator' ); ?>" autocomplete="off">
+			<span class="flexasm-pw-wrap">
+				<input type="password" id="flexasm-build-pass" class="regular-text" placeholder="<?php esc_attr_e( 'Leave empty if not needed', 'flexa-site-migrator' ); ?>" autocomplete="new-password">
+				<button type="button" class="flexasm-pw-toggle" aria-label="<?php esc_attr_e( 'Show password', 'flexa-site-migrator' ); ?>"><span class="dashicons dashicons-visibility" aria-hidden="true"></span></button>
+			</span>
 			<span class="description"><?php esc_html_e( "If set, the staging side must enter this password to pull the package (send it to them through a private channel, don't include it in the link).", 'flexa-site-migrator' ); ?></span>
 		</p>
 		<p>

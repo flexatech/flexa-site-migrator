@@ -445,4 +445,17 @@
 		$('#flexasm-imp-result').show();
 	}
 
+	// Show/hide (eye) toggle on password fields — both the build protection
+	// password (export page) and the pull password (import page).
+	$(document).on('click', '.flexasm-pw-toggle', function () {
+		var $btn = $(this);
+		var $input = $btn.siblings('input');
+		var show = $input.attr('type') === 'password';
+		$input.attr('type', show ? 'text' : 'password');
+		$btn.find('.dashicons')
+			.toggleClass('dashicons-visibility', !show)
+			.toggleClass('dashicons-hidden', show);
+		$btn.attr('aria-label', show ? __('Hide password', 'flexa-site-migrator') : __('Show password', 'flexa-site-migrator'));
+	});
+
 })(jQuery);

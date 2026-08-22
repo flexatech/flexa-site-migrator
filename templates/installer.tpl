@@ -198,12 +198,13 @@ function flexasm_preflight( $manifest, $fields ) {
 
 /**
  * Delete the migration artifacts left in this folder after a successful
- * migration: the archive part(s), database.sql, manifest.json and the
- * installer itself. Does NOT touch the extracted site files. Returns a
- * list of array( file, ok ) rows; installer.php is removed last.
+ * migration: the archive part(s), database.sql, manifest.json, the
+ * package README.txt and the installer itself. Does NOT touch the
+ * extracted site files. Returns a list of array( file, ok ) rows;
+ * installer.php is removed last.
  */
 function flexasm_cleanup( $manifest ) {
-	$targets = array( 'database.sql', 'manifest.json' );
+	$targets = array( 'database.sql', 'manifest.json', 'README.txt' );
 	$archives = ! empty( $manifest['archives'] ) ? $manifest['archives'] : array( 'archive.zip' );
 	foreach ( $archives as $apart ) {
 		$targets[] = basename( $apart );
@@ -504,7 +505,7 @@ $success = ( 'deploy' === $step && empty( $errors ) );
 	<?php if ( $success ) : ?>
 		<div class="ok">✅ Migration complete!</div>
 		<div class="log"><?php foreach ( $log as $l ) echo '• ' . htmlspecialchars( $l ) . '<br>'; ?></div>
-		<p class="warn">⚠️ For security reasons you should delete the migration files now: <code>installer.php</code>, the <code>archive-*.zip</code> files, <code>database.sql</code>, and <code>manifest.json</code>. You can do it with one click below.</p>
+		<p class="warn">⚠️ For security reasons you should delete the migration files now: <code>installer.php</code>, the <code>archive-*.zip</code> files, <code>database.sql</code>, <code>manifest.json</code>, and <code>README.txt</code>. You can do it with one click below.</p>
 		<form method="post" onsubmit="return confirm('Delete the backup/migration files from this folder? This cannot be undone.');">
 			<input type="hidden" name="step" value="cleanup">
 			<input type="hidden" name="new_url" value="<?php echo htmlspecialchars( rtrim( (string) ( $_POST['new_url'] ?? '' ), '/' ) ); ?>">

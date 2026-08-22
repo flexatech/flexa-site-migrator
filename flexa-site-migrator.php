@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator - WordPress Migration & Staging
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.6
+ * Version:     1.0.7
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.6' );
+define( 'FLEXASM_VERSION', '1.0.7' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -129,7 +129,7 @@ class Plugin {
 		if ( ! in_array( $hook, $this->page_hooks, true ) ) {
 			return;
 		}
-		wp_enqueue_style( 'flexasm-admin', FLEXASM_URL . 'assets/admin.css', array(), FLEXASM_VERSION );
+		wp_enqueue_style( 'flexasm-admin', FLEXASM_URL . 'assets/admin.css', array( 'dashicons' ), FLEXASM_VERSION );
 		wp_enqueue_script( 'flexasm-admin', FLEXASM_URL . 'assets/admin.js', array( 'jquery', 'wp-i18n' ), FLEXASM_VERSION, true );
 		wp_set_script_translations( 'flexasm-admin', 'flexa-site-migrator', FLEXASM_PATH . 'languages' );
 		wp_localize_script( 'flexasm-admin', 'FLEXASM', array(
@@ -288,8 +288,9 @@ class Plugin {
 
 	/**
 	 * Bundle a whole package (installer.php + archive parts + database.sql +
-	 * manifest.json) into one streamed .zip so the user can download it once and
-	 * unzip locally, instead of grabbing every file separately.
+	 * manifest.json + a README.txt with migration instructions) into one
+	 * streamed .zip so the user can download it once and unzip locally,
+	 * instead of grabbing every file separately.
 	 */
 	public function ajax_download_package() {
 		$this->guard();
@@ -303,7 +304,7 @@ class Plugin {
 		}
 		// Ship the migration files only; skip internal token/state/hidden files
 		// (plus installer.php/runner.php leftovers from pre-1.0.3 packages).
-		$skip    = array( 'flexasm-state.json', 'flexasm-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess', 'state.json', 'index.php', 'installer.php', 'runner.php' );
+		$skip    = array( 'flexasm-state.json', 'flexasm-token.hash', 'pull-token.hash', 'pull-pass.hash', 'pull-meta.json', '.htaccess', 'state.json', 'index.php', 'installer.php', 'runner.php', 'README.txt' );
 		$entries = array();
 		foreach ( glob( $dir . '/*' ) as $f ) {
 			if ( is_file( $f ) && ! in_array( basename( $f ), $skip, true ) ) {
@@ -316,8 +317,10 @@ class Plugin {
 		if ( empty( $entries ) ) {
 			wp_die( esc_html__( 'The migration files of this package were removed from this server after a pull — create a new package.', 'flexa-site-migrator' ), '', array( 'response' => 410 ) );
 		}
-		// The installer ships from the plugin template — it is never stored in uploads.
+		// The installer and the how-to-migrate README ship from the plugin
+		// templates — they are never stored in uploads.
 		$entries[] = array( 'path' => FLEXASM_PATH . 'templates/installer.tpl', 'name' => 'installer.php' );
+		$entries[] = array( 'path' => FLEXASM_PATH . 'templates/package-readme.txt', 'name' => 'README.txt' );
 		Zip_Stream::stream( $entries, 'flexa-site-migrator-' . $id . '.zip' );
 		exit;
 	}
