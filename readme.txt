@@ -71,8 +71,12 @@ The only outbound network request it makes is to the **production site URL you p
 
 == Screenshots ==
 
-1. Build a migration package on the production site (Site Migrator → Export).
-2. Import or pull the package on staging (Site Migrator → Import).
+1. Build the migration package on the production site (Site Migrator → Export) — the database and files are exported in chunks with live progress.
+2. Pull from production via link — paste the pull link on staging (Site Migrator → Import), test the connection, and start the migration.
+3. Automatic migration in progress on staging — the package is downloaded, extracted, and the database imported with search-replace, all in one run.
+4. Standalone installer — the system check verifies PHP, required extensions, archive parts, and the database connection before anything is touched.
+5. Standalone installer — enter the staging database details, table prefix, new site URL, and directory path.
+6. Migration complete — a one-click cleanup deletes installer.php, the archives, database.sql, and manifest.json for security.
 
 == Changelog ==
 

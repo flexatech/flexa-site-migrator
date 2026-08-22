@@ -7,6 +7,7 @@
 /.editorconfig
 /.distignore
 /.claude
+/.wordpress-org
 /.idea
 /.vscode
 /.DS_Store
