@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator - WordPress Migration & Staging
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.5
+ * Version:     1.0.6
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.5' );
+define( 'FLEXASM_VERSION', '1.0.6' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -45,6 +45,11 @@ class Plugin {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'action_links' ) );
+
+		// Hold WP's automatic updater while a package build is running: the build
+		// spans many requests, and a core/plugin/theme update mid-build would tear
+		// the archive between two versions (see Package::guard_source_unchanged()).
+		add_filter( 'automatic_updater_disabled', array( $this, 'block_auto_updates_while_building' ) );
 
 		// Build steps run via AJAX (split into chunks to avoid timeouts).
 		add_action( 'wp_ajax_flexasm_build_init',     array( $this, 'ajax_init' ) );
@@ -97,6 +102,11 @@ class Plugin {
 			'flexasm-import',
 			array( $this, 'render_import_page' )
 		);
+	}
+
+	/** Disable automatic updates only while a build transient is alive (~15 min, refreshed per chunk). */
+	public function block_auto_updates_while_building( $disabled ) {
+		return $disabled || false !== get_transient( Package::BUILDING_TRANSIENT );
 	}
 
 	/** Quick links on the Plugins list row. */

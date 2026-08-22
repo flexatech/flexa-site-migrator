@@ -9,6 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  */
 class Package {
 
+	// Marks an in-progress build (refreshed on every chunk request). While it
+	// exists, WP's automatic updater is held off — see Plugin::block_auto_updates().
+	const BUILDING_TRANSIENT = 'flexasm_build_active';
+
 	private $id;
 	private $dir;        // working directory: flexasm-packages/<id>
 	private $state;
@@ -65,6 +69,39 @@ class Package {
 		file_put_contents( $this->state_file(), wp_json_encode( $this->state ) );
 	}
 
+	/**
+	 * Fingerprint of every updatable component on the source (core, all plugins,
+	 * all themes, by version). The build spans many AJAX requests; if any of
+	 * these change between requests, the archive would mix files from two
+	 * versions (the file list is fixed at init, contents are read per chunk).
+	 */
+	private static function source_fingerprint() {
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		$components = array( 'wp' => get_bloginfo( 'version' ) );
+		foreach ( get_plugins() as $file => $data ) {
+			$components[ 'plugin:' . $file ] = isset( $data['Version'] ) ? (string) $data['Version'] : '';
+		}
+		foreach ( wp_get_themes() as $slug => $theme ) {
+			$components[ 'theme:' . $slug ] = (string) $theme->get( 'Version' );
+		}
+		return md5( (string) wp_json_encode( $components ) );
+	}
+
+	/** Abort the build as soon as core/a plugin/a theme changed since init. */
+	private function guard_source_unchanged() {
+		if ( empty( $this->state['fingerprint'] ) ) {
+			return; // Package started by a plugin version without fingerprints.
+		}
+		if ( self::source_fingerprint() !== $this->state['fingerprint'] ) {
+			delete_transient( self::BUILDING_TRANSIENT );
+			throw new \Exception( esc_html__( 'WordPress, a plugin, or a theme was updated on this site while the package was building. The package would mix files from two different versions, so the build was stopped — please start a new build.', 'flexa-site-migrator' ) );
+		}
+		// Keep holding automatic updates while the build is alive.
+		set_transient( self::BUILDING_TRANSIENT, $this->id, 15 * MINUTE_IN_SECONDS );
+	}
+
 	/** Step 1: initialize. */
 	public function init() {
 		self::secure_storage_dir();
@@ -87,9 +124,11 @@ class Package {
 			'file_total'  => $file_count,
 			'archive'     => array( 'offset' => 0, 'part' => 1, 'part_bytes' => 0, 'parts' => array() ),
 			'db'          => array( 'started' => false, 't' => 0, 'o' => 0, 'done' => false ),
+			'fingerprint' => self::source_fingerprint(),
 			'created'     => gmdate( 'c' ),
 		);
 		$this->save_state();
+		set_transient( self::BUILDING_TRANSIENT, $this->id, 15 * MINUTE_IN_SECONDS );
 
 		return array(
 			'package'    => $this->id,
@@ -100,6 +139,7 @@ class Package {
 
 	/** Step 2: export the DB (one chunk per call). */
 	public function step_database() {
+		$this->guard_source_unchanged();
 		$db = new Database( $this->sql_file() );
 
 		// On the first run, try mysqldump for speed.
@@ -130,6 +170,7 @@ class Package {
 
 	/** Step 3: compress files (one chunk per call, auto-splitting into parts). */
 	public function step_files() {
+		$this->guard_source_unchanged();
 		$archive = new Archive( $this->dir, $this->list_file() );
 		$res = $archive->zip_chunk( $this->state['archive'], (int) $this->state['file_total'] );
 
@@ -148,6 +189,8 @@ class Package {
 
 	/** Step 4: create the manifest, then clean up. */
 	public function finalize( $password = '', $allow_ips = array() ) {
+		$this->guard_source_unchanged();
+		delete_transient( self::BUILDING_TRANSIENT );
 		self::secure_storage_dir();
 		$parts = isset( $this->state['archive']['parts'] ) ? $this->state['archive']['parts'] : array();
 		sort( $parts );

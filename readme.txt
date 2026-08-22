@@ -4,7 +4,7 @@ Tags: migration, staging, clone, backup, duplicate
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,6 +76,10 @@ The only outbound network request it makes is to the **production site URL you p
 
 == Changelog ==
 
+= 1.0.6 =
+* Fix: the build now stops immediately with a clear message if WordPress core, a plugin, or a theme is updated on the source site while the package is being built. Previously the chunked build silently produced a torn package that mixed files from two versions (new files missing, removed files still present), which could fatal the migrated site.
+* Change: WordPress automatic updates are held off while a package build is in progress (released as soon as the build finishes, or within ~15 minutes if a build is abandoned).
+
 = 1.0.5 =
 * Change: the plugin now has its own top-level admin menu **Site Migrator** (with **Export** and **Import** submenus) instead of living under Tools.
 
@@ -111,6 +115,9 @@ The only outbound network request it makes is to the **production site URL you p
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Stops the build safely if core/a plugin/a theme is updated mid-build — previously this silently produced a corrupt package that could fatal the migrated site.
 
 = 1.0.5 =
 Moves the plugin to its own top-level Site Migrator menu with Export and Import submenus.
