@@ -1,4 +1,4 @@
-=== Flexa Site Migrator ===
+=== Flexa Site Migrator - WordPress Migration & Staging ===
 Contributors: flexatech
 Tags: migration, staging, clone, backup, duplicate
 Requires at least: 6.2

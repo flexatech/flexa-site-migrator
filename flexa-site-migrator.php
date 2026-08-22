@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Flexa Site Migrator
+ * Plugin Name: Flexa Site Migrator - WordPress Migration & Staging
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
  * Version:     1.0.5
  * Requires at least: 6.2
