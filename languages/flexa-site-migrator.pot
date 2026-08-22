@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-22T04:42:07+00:00\n"
+"POT-Creation-Date: 2026-08-22T06:43:19+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: flexa-site-migrator\n"
@@ -29,60 +29,60 @@ msgstr ""
 msgid "flexatech"
 msgstr ""
 
-#: flexa-site-migrator.php:82
-#: flexa-site-migrator.php:91
+#: flexa-site-migrator.php:89
+#: flexa-site-migrator.php:98
 msgid "Flexa Site Migrator"
 msgstr ""
 
-#: flexa-site-migrator.php:83
+#: flexa-site-migrator.php:90
 msgid "Site Migrator"
 msgstr ""
 
-#: flexa-site-migrator.php:92
+#: flexa-site-migrator.php:99
 msgid "Export"
 msgstr ""
 
-#: flexa-site-migrator.php:99
+#: flexa-site-migrator.php:106
 msgid "Flexa Site Migrator – Import"
 msgstr ""
 
-#: flexa-site-migrator.php:100
+#: flexa-site-migrator.php:107
 msgid "Import"
 msgstr ""
 
-#: flexa-site-migrator.php:115
+#: flexa-site-migrator.php:122
 msgid "Backup"
 msgstr ""
 
-#: flexa-site-migrator.php:116
+#: flexa-site-migrator.php:123
 msgid "Restore"
 msgstr ""
 
-#: flexa-site-migrator.php:148
+#: flexa-site-migrator.php:155
 msgid "Permission denied."
 msgstr ""
 
-#: flexa-site-migrator.php:250
-#: flexa-site-migrator.php:291
+#: flexa-site-migrator.php:257
+#: flexa-site-migrator.php:298
 msgid "Invalid package."
 msgstr ""
 
-#: flexa-site-migrator.php:272
+#: flexa-site-migrator.php:279
 #: includes/class-flexasm-pull.php:109
 msgid "Invalid file."
 msgstr ""
 
-#: flexa-site-migrator.php:276
+#: flexa-site-migrator.php:283
 msgid "File not found."
 msgstr ""
 
-#: flexa-site-migrator.php:295
+#: flexa-site-migrator.php:302
 #: includes/class-flexasm-package.php:63
 #: includes/class-flexasm-package.php:387
 msgid "Package not found."
 msgstr ""
 
-#: flexa-site-migrator.php:310
+#: flexa-site-migrator.php:317
 #: includes/class-flexasm-package.php:392
 msgid "The migration files of this package were removed from this server after a pull — create a new package."
 msgstr ""
@@ -99,7 +99,7 @@ msgstr ""
 msgid "Could not open %s"
 msgstr ""
 
-#: includes/class-flexasm-database.php:85
+#: includes/class-flexasm-database.php:88
 msgid "Could not write to the SQL file."
 msgstr ""
 
