@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.4
+ * Version:     1.0.5
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.4' );
+define( 'FLEXASM_VERSION', '1.0.5' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -37,6 +37,9 @@ require_once FLEXASM_PATH . 'includes/class-flexasm-pull.php';
 require_once FLEXASM_PATH . 'includes/class-flexasm-health.php';
 
 class Plugin {
+
+	/** Admin page hooks (used to enqueue assets only on our screens). */
+	private $page_hooks = array();
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
@@ -70,16 +73,26 @@ class Plugin {
 	}
 
 	public function menu() {
-		add_management_page(
+		add_menu_page(
 			__( 'Flexa Site Migrator', 'flexa-site-migrator' ),
+			__( 'Site Migrator', 'flexa-site-migrator' ),
+			'manage_options',
+			'flexa-site-migrator',
+			array( $this, 'render_page' ),
+			'dashicons-migrate'
+		);
+		$this->page_hooks[] = add_submenu_page(
+			'flexa-site-migrator',
 			__( 'Flexa Site Migrator', 'flexa-site-migrator' ),
+			__( 'Export', 'flexa-site-migrator' ),
 			'manage_options',
 			'flexa-site-migrator',
 			array( $this, 'render_page' )
 		);
-		add_management_page(
+		$this->page_hooks[] = add_submenu_page(
+			'flexa-site-migrator',
 			__( 'Flexa Site Migrator – Import', 'flexa-site-migrator' ),
-			__( 'Flexa Site Migrator Import', 'flexa-site-migrator' ),
+			__( 'Import', 'flexa-site-migrator' ),
 			'manage_options',
 			'flexasm-import',
 			array( $this, 'render_import_page' )
@@ -89,14 +102,14 @@ class Plugin {
 	/** Quick links on the Plugins list row. */
 	public function action_links( $links ) {
 		$mine = array(
-			'<a href="' . esc_url( admin_url( 'tools.php?page=flexa-site-migrator' ) ) . '">' . esc_html__( 'Backup', 'flexa-site-migrator' ) . '</a>',
-			'<a href="' . esc_url( admin_url( 'tools.php?page=flexasm-import' ) ) . '">' . esc_html__( 'Restore', 'flexa-site-migrator' ) . '</a>',
+			'<a href="' . esc_url( admin_url( 'admin.php?page=flexa-site-migrator' ) ) . '">' . esc_html__( 'Backup', 'flexa-site-migrator' ) . '</a>',
+			'<a href="' . esc_url( admin_url( 'admin.php?page=flexasm-import' ) ) . '">' . esc_html__( 'Restore', 'flexa-site-migrator' ) . '</a>',
 		);
 		return array_merge( $mine, $links );
 	}
 
 	public function assets( $hook ) {
-		if ( ! in_array( $hook, array( 'tools_page_flexa-site-migrator', 'tools_page_flexasm-import' ), true ) ) {
+		if ( ! in_array( $hook, $this->page_hooks, true ) ) {
 			return;
 		}
 		wp_enqueue_style( 'flexasm-admin', FLEXASM_URL . 'assets/admin.css', array(), FLEXASM_VERSION );

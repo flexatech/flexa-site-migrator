@@ -4,7 +4,7 @@ Tags: migration, staging, clone, backup, duplicate
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,9 +24,9 @@ Flexa Site Migrator migrates a WordPress site from **production to staging**. It
 
 **Deployment methods**
 
-*Method A — Pull via link (simplest):* Install the plugin on both production and staging. Build the package on production, copy the link, paste it on staging under Tools → Flexa Site Migrator Import, and click Pull & Migrate. Staging downloads the files from production (byte-range supported) and runs extraction, DB import, and search-replace on its own.
+*Method A — Pull via link (simplest):* Install the plugin on both production and staging. Build the package on production, copy the link, paste it on staging under Site Migrator → Import, and click Pull & Migrate. Staging downloads the files from production (byte-range supported) and runs extraction, DB import, and search-replace on its own.
 
-*Method B — wp-admin import:* Copy the package folder to staging's `wp-content/flexasm-packages/`, then run the migration from Tools → Flexa Site Migrator Import.
+*Method B — wp-admin import:* Copy the package folder to staging's `wp-content/flexasm-packages/`, then run the migration from Site Migrator → Import.
 
 *Method C — Standalone installer:* For an empty staging site with no WordPress. Upload `installer.php` and the package files to the site root, open `installer.php` in a browser, enter the database details, and start the migration.
 
@@ -34,8 +34,8 @@ Flexa Site Migrator migrates a WordPress site from **production to staging**. It
 
 1. Upload the `flexa-site-migrator` folder to `/wp-content/plugins/` on the **production** site (or install it through Plugins → Add New → Upload Plugin).
 2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Go to **Tools → Flexa Site Migrator** to build a package.
-4. To deploy via link or wp-admin import, install and activate the plugin on the **staging** site as well, then use **Tools → Flexa Site Migrator Import**.
+3. Go to **Site Migrator → Export** to build a package.
+4. To deploy via link or wp-admin import, install and activate the plugin on the **staging** site as well, then use **Site Migrator → Import**.
 
 == Frequently Asked Questions ==
 
@@ -67,14 +67,17 @@ Yes. All admin-facing strings (PHP and JavaScript) are internationalized under t
 
 This plugin does not connect to any service operated by us or by a fixed third party, and it sends no data anywhere on its own.
 
-The only outbound network request it makes is to the **production site URL you paste on the staging side** (Tools → Flexa Site Migrator Import → "Pull from production via link"). When you click Test connection or Pull & Migrate, staging contacts that URL to download the migration package (site files and the database dump) you created on production. The request carries the access token from the link, and, if the package is password-protected, the password you enter (sent in a request header). No third party is involved — both ends are your own sites — and nothing is transmitted until you paste a link and start a pull.
+The only outbound network request it makes is to the **production site URL you paste on the staging side** (Site Migrator → Import → "Pull from production via link"). When you click Test connection or Pull & Migrate, staging contacts that URL to download the migration package (site files and the database dump) you created on production. The request carries the access token from the link, and, if the package is password-protected, the password you enter (sent in a request header). No third party is involved — both ends are your own sites — and nothing is transmitted until you paste a link and start a pull.
 
 == Screenshots ==
 
-1. Build a migration package on the production site (Tools → Flexa Site Migrator).
-2. Import or pull the package on staging (Tools → Flexa Site Migrator Import).
+1. Build a migration package on the production site (Site Migrator → Export).
+2. Import or pull the package on staging (Site Migrator → Import).
 
 == Changelog ==
+
+= 1.0.5 =
+* Change: the plugin now has its own top-level admin menu **Site Migrator** (with **Export** and **Import** submenus) instead of living under Tools.
 
 = 1.0.4 =
 * Compatibility: tested up to WordPress 7.1.
@@ -108,6 +111,9 @@ The only outbound network request it makes is to the **production site URL you p
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.0.5 =
+Moves the plugin to its own top-level Site Migrator menu with Export and Import submenus.
 
 = 1.0.4 =
 Confirms compatibility with WordPress 7.1 and documents the plugin's external network request in the readme.
