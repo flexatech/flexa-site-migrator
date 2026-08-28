@@ -26,7 +26,20 @@ class Archive {
 		'.svn',
 	);
 
-	public function __construct( $dir, $list_file ) {
+	/**
+	 * Optional top-level trees the user can leave out to shrink the package.
+	 * key (sent from the export UI) => path relative to the WP install root.
+	 */
+	public static function exclude_map() {
+		return array(
+			'media'      => 'wp-content/uploads',
+			'themes'     => 'wp-content/themes',
+			'mu-plugins' => 'wp-content/mu-plugins',
+			'plugins'    => 'wp-content/plugins',
+		);
+	}
+
+	public function __construct( $dir, $list_file, $excludes = array() ) {
 		$this->dir       = rtrim( $dir, '/\\' );
 		$this->list_file = $list_file;
 		// ABSPATH is the WP install root — the base the archive walks to package the whole site. No WP function returns the install root.
@@ -37,6 +50,14 @@ class Archive {
 		$pkg_norm  = rtrim( str_replace( '\\', '/', FLEXASM_PACKAGE_DIR ), '/' );
 		if ( 0 === strpos( $pkg_norm, $root_norm ) ) {
 			$this->skip_dirs[] = substr( $pkg_norm, strlen( $root_norm ) );
+		}
+
+		// User-selected trees to leave out (media library / themes / plugins / mu-plugins).
+		$map = self::exclude_map();
+		foreach ( (array) $excludes as $key ) {
+			if ( isset( $map[ $key ] ) ) {
+				$this->skip_dirs[] = $map[ $key ];
+			}
 		}
 	}
 

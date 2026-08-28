@@ -14,11 +14,66 @@ class Database {
 
 	private $wpdb;
 	private $sql_file;
+	private $excludes;
 
-	public function __construct( $sql_file ) {
+	public function __construct( $sql_file, $excludes = array() ) {
 		global $wpdb;
 		$this->wpdb     = $wpdb;
 		$this->sql_file = $sql_file;
+		$this->excludes = array_values( (array) $excludes );
+	}
+
+	/**
+	 * DB-level row filters the export can apply (opt-in from the export UI).
+	 * key (sent from the export UI) => label is defined in the template; here we
+	 * only need the set of recognised keys.
+	 */
+	public static function exclude_map() {
+		return array( 'spam_comments', 'revisions' );
+	}
+
+	/**
+	 * True when a selected exclude drops rows from specific tables. Such filters
+	 * need a per-table WHERE clause, which mysqldump can't express in one pass, so
+	 * the caller falls back to the PHP chunked exporter when this is true.
+	 */
+	public function has_row_filters() {
+		foreach ( self::exclude_map() as $key ) {
+			if ( in_array( $key, $this->excludes, true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * SQL WHERE condition (without the WHERE keyword) that drops the excluded rows
+	 * for $table, or '' when nothing is filtered. Only the exact core tables match
+	 * (a lookalike custom table is never touched), and every literal is constant —
+	 * no request data — so it is safe to inline into the prepared query.
+	 */
+	public function row_filter( $table ) {
+		$conds = array();
+		$wpdb  = $this->wpdb;
+		$has   = function ( $key ) { return in_array( $key, $this->excludes, true ); };
+
+		if ( $has( 'spam_comments' ) ) {
+			if ( $table === $wpdb->comments ) {
+				$conds[] = "comment_approved <> 'spam'";
+			} elseif ( $table === $wpdb->commentmeta ) {
+				// Drop meta orphaned by the spam comments we're leaving out.
+				$conds[] = 'comment_id NOT IN (SELECT comment_ID FROM ' . self::esc_id( $wpdb->comments ) . " WHERE comment_approved = 'spam')";
+			}
+		}
+		if ( $has( 'revisions' ) ) {
+			if ( $table === $wpdb->posts ) {
+				$conds[] = "post_type <> 'revision'";
+			} elseif ( $table === $wpdb->postmeta ) {
+				// Drop meta orphaned by the revisions we're leaving out.
+				$conds[] = 'post_id NOT IN (SELECT ID FROM ' . self::esc_id( $wpdb->posts ) . " WHERE post_type = 'revision')";
+			}
+		}
+		return implode( ' AND ', $conds );
 	}
 
 	/** List of tables in the current database. */
@@ -112,10 +167,14 @@ class Database {
 			$offset = (int) $offset;
 			$wpdb   = $this->wpdb;
 			// Table name comes from SHOW TABLES (not user input) and is bound with
-			// the %i identifier placeholder (WP 6.2+); LIMIT/OFFSET use %d.
+			// the %i identifier placeholder (WP 6.2+); LIMIT/OFFSET use %d. The
+			// optional WHERE (spam/revision filter) is built from constant literals
+			// only — no request data, no % placeholders — so it inlines safely.
+			$where = $this->row_filter( $table );
+			$sql   = 'SELECT * FROM %i ' . ( '' !== $where ? 'WHERE ' . $where . ' ' : '' ) . 'LIMIT %d OFFSET %d';
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chunked table export; no higher-level API exists and caching does not apply.
 			$rows = $wpdb->get_results(
-				$wpdb->prepare( 'SELECT * FROM %i LIMIT %d OFFSET %d', $table, $limit, $offset ),
+				$wpdb->prepare( $sql, $table, $limit, $offset ),
 				ARRAY_A
 			);
 			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

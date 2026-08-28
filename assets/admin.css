@@ -11,6 +11,22 @@
 .flexasm-files a{display:inline-block;padding:10px 16px;background:#f6f7f7;border:1px solid #c3c4c7;border-radius:6px;text-decoration:none;font-weight:600;}
 .flexasm-files a:hover{background:#2271b1;color:#fff;border-color:#2271b1;}
 
+/* Advanced options (collapsed by default to keep the main view tidy) */
+.flexasm-advanced{margin:0 0 20px;}
+.flexasm-advanced>summary{display:inline-block;cursor:pointer;color:#2271b1;font-weight:600;list-style:none;user-select:none;padding:4px 0;}
+.flexasm-advanced>summary::-webkit-details-marker{display:none;}
+.flexasm-advanced>summary::before{content:"\25B6";display:inline-block;margin-right:8px;font-size:11px;transition:transform .15s ease;}
+.flexasm-advanced[open]>summary::before{transform:rotate(90deg);}
+.flexasm-advanced>summary:hover{color:#135e96;}
+.flexasm-advanced>summary .description{font-weight:400;}
+.flexasm-advanced[open]>summary{margin-bottom:12px;}
+
+/* Exclude-from-package checkboxes */
+.flexasm-excludes{border:1px solid #dcdcde;border-radius:6px;padding:12px 16px;margin:0 0 20px;}
+.flexasm-excludes legend{font-weight:600;color:#1d2327;padding:0 4px;}
+.flexasm-excludes label{display:block;margin:6px 0;}
+.flexasm-excludes .description{margin:8px 0 0;}
+
 /* Password fields with a show/hide (eye) toggle */
 .flexasm-pw-wrap{position:relative;display:inline-block;vertical-align:middle;}
 .flexasm-pw-wrap input{padding-right:36px;}

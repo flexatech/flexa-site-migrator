@@ -66,6 +66,7 @@
 	$('#flexasm-build').on('click', function () {
 		sdBuildPass = $('#flexasm-build-pass').length ? $('#flexasm-build-pass').val() : '';
 		sdBuildIps = $('#flexasm-build-ips').length ? $('#flexasm-build-ips').val() : '';
+		var excludes = $('.flexasm-exclude:checked').map(function () { return this.value; }).get().join(',');
 		$(this).prop('disabled', true);
 		$('#flexasm-build-spin').show();
 		$('#flexasm-error').hide();
@@ -74,7 +75,7 @@
 		setBar('db', 0); setBar('files', 0);
 		status(__('Scanning site…', 'flexa-site-migrator'));
 
-		post('flexasm_build_init')
+		post('flexasm_build_init', { exclude: excludes })
 			.done(function (res) {
 				if (!res.success) { return fail(res.data && res.data.message); }
 				pkg = res.data.package;

@@ -102,8 +102,8 @@ class Package {
 		set_transient( self::BUILDING_TRANSIENT, $this->id, 15 * MINUTE_IN_SECONDS );
 	}
 
-	/** Step 1: initialize. */
-	public function init() {
+	/** Step 1: initialize. $excludes leaves whole trees (media/themes/plugins/mu-plugins) out of the archive. */
+	public function init( $excludes = array() ) {
 		self::secure_storage_dir();
 		wp_mkdir_p( $this->dir );
 		file_put_contents( $this->dir . '/index.php', '<?php // Silence is golden.' );
@@ -111,7 +111,7 @@ class Package {
 		$db     = new Database( $this->sql_file() );
 		$tables = $db->tables();
 
-		$archive    = new Archive( $this->dir, $this->list_file() );
+		$archive    = new Archive( $this->dir, $this->list_file(), $excludes );
 		$file_count = $archive->build_filelist();
 
 		$this->state = array(
@@ -122,6 +122,7 @@ class Package {
 			'prefix'      => $GLOBALS['wpdb']->prefix,
 			'tables'      => $tables,
 			'file_total'  => $file_count,
+			'excludes'    => array_values( (array) $excludes ),
 			'archive'     => array( 'offset' => 0, 'part' => 1, 'part_bytes' => 0, 'parts' => array() ),
 			'db'          => array( 'started' => false, 't' => 0, 'o' => 0, 'done' => false ),
 			'fingerprint' => self::source_fingerprint(),
@@ -140,12 +141,15 @@ class Package {
 	/** Step 2: export the DB (one chunk per call). */
 	public function step_database() {
 		$this->guard_source_unchanged();
-		$db = new Database( $this->sql_file() );
+		$excludes = isset( $this->state['excludes'] ) ? $this->state['excludes'] : array();
+		$db       = new Database( $this->sql_file(), $excludes );
 
-		// On the first run, try mysqldump for speed.
+		// On the first run, try mysqldump for speed — unless row filters (spam
+		// comments / revisions) are active, which need per-table WHERE clauses
+		// mysqldump can't apply in one pass, so those fall back to the PHP path.
 		if ( empty( $this->state['db']['started'] ) && empty( $this->state['db']['tried_dump'] ) ) {
 			$this->state['db']['tried_dump'] = true;
-			if ( $db->try_mysqldump() ) {
+			if ( ! $db->has_row_filters() && $db->try_mysqldump() ) {
 				$this->state['db']['started'] = true;
 				$this->state['db']['done']    = true;
 				$this->save_state();

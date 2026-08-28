@@ -162,8 +162,22 @@ class Plugin {
 	public function ajax_init() {
 		$this->guard();
 		try {
+			// Optional excludes sent as a comma-separated list: file trees
+			// (media/themes/plugins/mu-plugins) plus DB row filters (spam comments,
+			// post revisions). Archive picks up the file keys, Database the DB keys.
+			$excludes = array();
+			$raw      = sanitize_text_field( wp_unslash( $_POST['exclude'] ?? '' ) );
+			$allowed  = array_merge( array_keys( Archive::exclude_map() ), Database::exclude_map() );
+			if ( '' !== trim( $raw ) ) {
+				foreach ( explode( ',', $raw ) as $key ) {
+					$key = trim( $key );
+					if ( in_array( $key, $allowed, true ) ) {
+						$excludes[] = $key;
+					}
+				}
+			}
 			$pkg   = new Package();
-			$state = $pkg->init();
+			$state = $pkg->init( $excludes );
 			wp_send_json_success( $state );
 		} catch ( \Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );

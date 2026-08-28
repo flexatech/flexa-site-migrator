@@ -12,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	<?php \Flexa\SiteMigrator\Health::render(); ?>
 
 	<div class="flexasm-card">
+		<details class="flexasm-advanced">
+			<summary><?php esc_html_e( 'Advanced options', 'flexa-site-migrator' ); ?> <span class="description"><?php esc_html_e( '(password, IP restriction, exclusions)', 'flexa-site-migrator' ); ?></span></summary>
 		<p style="margin-top:0;">
 			<label for="flexasm-build-pass"><?php esc_html_e( 'Protection password (optional):', 'flexa-site-migrator' ); ?></label><br>
 			<span class="flexasm-pw-wrap">
@@ -25,6 +27,18 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			<input type="text" id="flexasm-build-ips" class="regular-text" placeholder="<?php esc_attr_e( 'e.g. 203.0.113.5, 203.0.113.6', 'flexa-site-migrator' ); ?>" autocomplete="off">
 			<span class="description"><?php esc_html_e( "Only these IPs can pull the package. Leave empty = no restriction. Don't know the destination server's IP yet? Leave it empty, click Test connection on the destination side, and it will report the IP for you to add here.", 'flexa-site-migrator' ); ?></span>
 		</p>
+		<fieldset class="flexasm-excludes">
+			<legend><?php esc_html_e( 'Exclude from package (optional):', 'flexa-site-migrator' ); ?></legend>
+			<label><input type="checkbox" class="flexasm-exclude" value="media"> <?php esc_html_e( 'Exclude media library', 'flexa-site-migrator' ); ?> <code>wp-content/uploads</code></label>
+			<label><input type="checkbox" class="flexasm-exclude" value="themes"> <?php esc_html_e( 'Exclude themes', 'flexa-site-migrator' ); ?> <code>wp-content/themes</code></label>
+			<label><input type="checkbox" class="flexasm-exclude" value="mu-plugins"> <?php esc_html_e( 'Exclude must-use plugins', 'flexa-site-migrator' ); ?> <code>wp-content/mu-plugins</code></label>
+			<label><input type="checkbox" class="flexasm-exclude" value="plugins"> <?php esc_html_e( 'Exclude plugins', 'flexa-site-migrator' ); ?> <code>wp-content/plugins</code></label>
+			<label><input type="checkbox" class="flexasm-exclude" value="spam_comments"> <?php esc_html_e( 'Exclude spam comments', 'flexa-site-migrator' ); ?></label>
+			<label><input type="checkbox" class="flexasm-exclude" value="revisions"> <?php esc_html_e( 'Exclude post revisions', 'flexa-site-migrator' ); ?></label>
+			<p class="description"><?php esc_html_e( 'Ticked items are left out to make the package smaller. The first four skip whole folders in the file archive; the last two trim spam comments and post revisions (with their metadata) from the database dump.', 'flexa-site-migrator' ); ?></p>
+		</fieldset>
+		</details>
+
 		<button id="flexasm-build" class="button button-primary button-hero"><?php esc_html_e( 'Create Package', 'flexa-site-migrator' ); ?></button>
 		<span id="flexasm-build-spin" class="flexasm-spinner" style="display:none;" aria-hidden="true"></span>
 
