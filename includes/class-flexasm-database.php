@@ -47,33 +47,49 @@ class Database {
 	}
 
 	/**
-	 * SQL WHERE condition (without the WHERE keyword) that drops the excluded rows
-	 * for $table, or '' when nothing is filtered. Only the exact core tables match
-	 * (a lookalike custom table is never touched), and every literal is constant —
-	 * no request data — so it is safe to inline into the prepared query.
+	 * Which fixed row filter applies to $table given the current excludes, or ''
+	 * for none. Only the exact core tables match (a lookalike custom table is
+	 * never touched). Drives select_rows(), which maps each key to a constant,
+	 * fully-prepared query — the SQL is never built from a variable.
 	 */
-	public function row_filter( $table ) {
-		$conds = array();
-		$wpdb  = $this->wpdb;
-		$has   = function ( $key ) { return in_array( $key, $this->excludes, true ); };
+	public function filter_key( $table ) {
+		$wpdb = $this->wpdb;
+		$has  = function ( $key ) { return in_array( $key, $this->excludes, true ); };
 
 		if ( $has( 'spam_comments' ) ) {
-			if ( $table === $wpdb->comments ) {
-				$conds[] = "comment_approved <> 'spam'";
-			} elseif ( $table === $wpdb->commentmeta ) {
-				// Drop meta orphaned by the spam comments we're leaving out.
-				$conds[] = 'comment_id NOT IN (SELECT comment_ID FROM ' . self::esc_id( $wpdb->comments ) . " WHERE comment_approved = 'spam')";
-			}
+			if ( $table === $wpdb->comments )    { return 'spam_comments'; }
+			if ( $table === $wpdb->commentmeta ) { return 'spam_commentmeta'; }
 		}
 		if ( $has( 'revisions' ) ) {
-			if ( $table === $wpdb->posts ) {
-				$conds[] = "post_type <> 'revision'";
-			} elseif ( $table === $wpdb->postmeta ) {
-				// Drop meta orphaned by the revisions we're leaving out.
-				$conds[] = 'post_id NOT IN (SELECT ID FROM ' . self::esc_id( $wpdb->posts ) . " WHERE post_type = 'revision')";
-			}
+			if ( $table === $wpdb->posts )    { return 'revisions_posts'; }
+			if ( $table === $wpdb->postmeta ) { return 'revisions_postmeta'; }
 		}
-		return implode( ' AND ', $conds );
+		return '';
+	}
+
+	/**
+	 * Fetch one page of rows for $table, applying the opt-in row filters (spam
+	 * comments / post revisions, plus the metadata orphaned by them). Every query
+	 * is a $wpdb->prepare() call with a CONSTANT format string; table names (main
+	 * and subquery) bind with %i and LIMIT/OFFSET with %d, so no dynamic SQL and
+	 * no request data ever reach the query.
+	 */
+	private function select_rows( $table, $limit, $offset ) {
+		$wpdb = $this->wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chunked table export; no higher-level API exists and caching does not apply.
+		switch ( $this->filter_key( $table ) ) {
+			case 'spam_comments':
+				return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE comment_approved <> 'spam' LIMIT %d OFFSET %d", $table, $limit, $offset ), ARRAY_A );
+			case 'spam_commentmeta':
+				return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE comment_id NOT IN (SELECT comment_ID FROM %i WHERE comment_approved = 'spam') LIMIT %d OFFSET %d", $table, $wpdb->comments, $limit, $offset ), ARRAY_A );
+			case 'revisions_posts':
+				return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE post_type <> 'revision' LIMIT %d OFFSET %d", $table, $limit, $offset ), ARRAY_A );
+			case 'revisions_postmeta':
+				return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE post_id NOT IN (SELECT ID FROM %i WHERE post_type = 'revision') LIMIT %d OFFSET %d", $table, $wpdb->posts, $limit, $offset ), ARRAY_A );
+			default:
+				return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i LIMIT %d OFFSET %d', $table, $limit, $offset ), ARRAY_A );
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/** List of tables in the current database. */
@@ -165,20 +181,10 @@ class Database {
 
 			$limit  = (int) $budget; // maximum number of rows requested this time
 			$offset = (int) $offset;
-			$wpdb   = $this->wpdb;
-			// Table name comes from SHOW TABLES (not user input) and is bound with
-			// the %i identifier placeholder (WP 6.2+); LIMIT/OFFSET use %d. The
-			// optional WHERE (spam/revision filter) is built from constant literals
-			// only — no request data, no % placeholders — so it inlines safely.
-			$where = $this->row_filter( $table );
-			$sql   = 'SELECT * FROM %i ' . ( '' !== $where ? 'WHERE ' . $where . ' ' : '' ) . 'LIMIT %d OFFSET %d';
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chunked table export; no higher-level API exists and caching does not apply.
-			$rows = $wpdb->get_results(
-				$wpdb->prepare( $sql, $table, $limit, $offset ),
-				ARRAY_A
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$count = count( $rows );
+			// select_rows() runs the chunk query (with the opt-in spam/revision
+			// filters) through constant, fully-prepared statements.
+			$rows   = $this->select_rows( $table, $limit, $offset );
+			$count  = count( $rows );
 
 			if ( $count > 0 ) {
 				$this->write_inserts( $fh, $table, $rows );

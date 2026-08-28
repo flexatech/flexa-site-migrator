@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Flexa Site Migrator - WordPress Migration & Staging
+ * Plugin Name: Flexa Site Migrator - Migration & Staging
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.7
+ * Version:     1.0.8
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.7' );
+define( 'FLEXASM_VERSION', '1.0.8' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -80,8 +80,22 @@ class Plugin {
 		add_action( 'wp_ajax_flexasm_pull_cleanup',  array( $this, 'ajax_pull_cleanup' ) );
 	}
 
+	/**
+	 * Load bundled .mo translations for distributions outside WordPress.org.
+	 *
+	 * WordPress.org-hosted plugins get their translations loaded automatically
+	 * (no load_plugin_textdomain() needed since WP 4.6), and no .mo files are
+	 * shipped in that build — so this is a no-op there. For off-WP.org builds
+	 * (e.g. CodeCanyon) the .mo files ship in /languages, and just-in-time
+	 * loading before WP 6.7 doesn't scan the plugin folder, so we load the file
+	 * for the current locale directly. load_textdomain() (unlike
+	 * load_plugin_textdomain()) is not flagged as redundant on WP.org.
+	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( 'flexa-site-migrator', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		$mofile = FLEXASM_PATH . 'languages/flexa-site-migrator-' . determine_locale() . '.mo';
+		if ( is_readable( $mofile ) ) {
+			load_textdomain( 'flexa-site-migrator', $mofile );
+		}
 	}
 
 	public function menu() {

@@ -101,31 +101,7 @@ class Replace {
 			$last_pk = null;
 			$offset  = 0;
 			do {
-				if ( $pk && null !== $last_pk ) {
-					$sql = $wpdb->prepare(
-						'SELECT * FROM %i WHERE %i > %s ORDER BY %i ASC LIMIT %d',
-						$table,
-						$pk,
-						$last_pk,
-						$pk,
-						self::ROWS_PER_PAGE
-					);
-				} elseif ( $pk ) {
-					$sql = $wpdb->prepare(
-						'SELECT * FROM %i ORDER BY %i ASC LIMIT %d',
-						$table,
-						$pk,
-						self::ROWS_PER_PAGE
-					);
-				} else {
-					$sql = $wpdb->prepare(
-						'SELECT * FROM %i LIMIT %d OFFSET %d',
-						$table,
-						self::ROWS_PER_PAGE,
-						$offset
-					);
-				}
-				$rows = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $sql is built exclusively by $wpdb->prepare() above (%i identifier placeholders, %s/%d values).
+				$rows = self::page_rows( $wpdb, $table, $pk, $last_pk, $offset );
 				$got  = count( $rows );
 
 				foreach ( $rows as $row ) {
@@ -160,6 +136,25 @@ class Replace {
 		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return $changed;
+	}
+
+	/**
+	 * One page of rows for the search-replace walk: keyset pagination when the
+	 * table has a single primary key (stable + fast), else LIMIT/OFFSET. Each
+	 * branch hands a $wpdb->prepare() with a CONSTANT format string (identifiers
+	 * bound with %i, values with %s/%d) straight to get_results — the query is
+	 * never assembled from a variable.
+	 */
+	private static function page_rows( $wpdb, $table, $pk, $last_pk, $offset ) {
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chunked search-replace over every table; no higher-level API applies.
+		if ( $pk && null !== $last_pk ) {
+			return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE %i > %s ORDER BY %i ASC LIMIT %d', $table, $pk, $last_pk, $pk, self::ROWS_PER_PAGE ), ARRAY_A );
+		}
+		if ( $pk ) {
+			return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i ORDER BY %i ASC LIMIT %d', $table, $pk, self::ROWS_PER_PAGE ), ARRAY_A );
+		}
+		return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i LIMIT %d OFFSET %d', $table, self::ROWS_PER_PAGE, $offset ), ARRAY_A );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/** UPDATE one changed row (by primary key, or by matching every original value when there is none). */
