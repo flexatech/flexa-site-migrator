@@ -4,7 +4,7 @@ Tags: migration, staging, clone, backup, duplicate
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 1.0.8
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,9 +65,24 @@ Yes. All admin-facing strings (PHP and JavaScript) are internationalized under t
 
 == External services ==
 
-This plugin does not connect to any service operated by us or by a fixed third party, and it sends no data anywhere on its own.
+Your migration packages, tokens, and settings stay in your own WordPress installation. The plugin makes two kinds of outbound request, described below.
 
-The only outbound network request it makes is to the **production site URL you paste on the staging side** (Site Migrator → Import → "Pull from production via link"). When you click Test connection or Pull & Migrate, staging contacts that URL to download the migration package (site files and the database dump) you created on production. The request carries the access token from the link, and, if the package is password-protected, the password you enter (sent in a request header). No third party is involved — both ends are your own sites — and nothing is transmitted until you paste a link and start a pull.
+= Migration transfer (your own sites) =
+
+The main outbound request goes to the **production site URL you paste on the staging side** (Site Migrator > Import > "Pull from production via link"). When you click Test connection or Pull & Migrate, staging contacts that URL to download the migration package (site files and the database dump) you created on production. The request carries the access token from the link, and, if the package is password-protected, the password you enter (sent in a request header). No third party is involved: both ends are your own sites, and nothing is transmitted until you paste a link and start a pull.
+
+= Deactivation feedback (Flexa Product Intelligence) =
+
+When you go to deactivate Flexa Site Migrator on the Plugins screen, a short optional survey asks why. It is served by Flexa's product intelligence service at https://product-intelligence.flexacommerce.com. It runs only on `wp-admin/plugins.php`, never on the front end, and never blocks or delays deactivation.
+
+What is sent, and when:
+
+* On opening the Plugins screen: a request to `/api/v1/config` (product slug and tier) to load the survey configuration. Cached for 6 hours.
+* When you deactivate or interact with the survey: the reason you pick and any optional message you type, sent to `/api/v1/deactivations`, `/api/v1/events`, `/api/v1/feedback`, `/api/v1/feature-requests`, and `/api/v1/recovery-events`.
+
+Every request includes an anonymous per-site identifier (a random UUID), the plugin version and tier, and by default your WordPress/PHP version and locale. No email, site domain, user identity, or raw IP is collected. Turn environment reporting off with `add_filter( 'flexa_site_migrator/deactivation_survey/config', fn( $c ) => array( 'collect_environment' => false ) + $c );` and disable the whole survey with `add_filter( 'flexa_site_migrator/deactivation_survey/enabled', '__return_false' );`.
+
+Service terms and privacy policy: https://flexacommerce.com/pages/terms and https://flexacommerce.com/pages/privacy
 
 == Screenshots ==
 
@@ -79,6 +94,9 @@ The only outbound network request it makes is to the **production site URL you p
 6. Migration complete — a one-click cleanup deletes installer.php, the archives, database.sql, and manifest.json for security.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: an optional deactivation feedback survey. If you deactivate the plugin, a short survey asks why, so we know what to improve. It is entirely optional, admin-only, and never blocks or delays deactivation. See the External services section for exactly what is sent and how to turn it off.
 
 = 1.0.8 =
 * New: an "Advanced options" section on the Export page lets you exclude parts of the site to shrink the package — whole folders (media library, themes, must-use plugins, plugins) are skipped in the file archive, and spam comments and post revisions (with their metadata) are trimmed from the database dump.
@@ -130,6 +148,9 @@ The only outbound network request it makes is to the **production site URL you p
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds an optional, admin-only deactivation feedback survey. It never blocks deactivation and can be turned off with a filter. See the External services section for what is sent.
 
 = 1.0.8 =
 Adds optional exclusions (media, themes, plugins, mu-plugins, spam comments, post revisions) under a new Advanced options section to build smaller packages.

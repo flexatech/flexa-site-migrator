@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Flexa Site Migrator - Migration & Staging
  * Description: Creates a package (files + database + installer) to migrate WordPress from production to staging. Runs anywhere, no shell required.
- * Version:     1.0.8
+ * Version:     1.1.0
  * Requires at least: 6.2
  * Requires PHP: 7.0
  * Author:      flexatech
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FLEXASM_VERSION', '1.0.8' );
+define( 'FLEXASM_VERSION', '1.1.0' );
 define( 'FLEXASM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FLEXASM_URL', plugin_dir_url( __FILE__ ) );
 
@@ -35,6 +35,7 @@ require_once FLEXASM_PATH . 'includes/class-flexasm-replace.php';
 require_once FLEXASM_PATH . 'includes/class-flexasm-importer.php';
 require_once FLEXASM_PATH . 'includes/class-flexasm-pull.php';
 require_once FLEXASM_PATH . 'includes/class-flexasm-health.php';
+require_once FLEXASM_PATH . 'includes/class-flexasm-deactivation-survey.php';
 
 class Plugin {
 
@@ -441,6 +442,11 @@ class Plugin {
 }
 
 new Plugin();
+
+// Deactivation feedback survey (Plugins screen only, best-effort, never blocks
+// deactivation). Booted independently of the main Plugin class and any admin
+// screen guard so it works regardless of which page the user deactivates from.
+Deactivation_Survey::boot();
 
 // Create the package directory and deny all direct web access to it on activation.
 register_activation_hook( __FILE__, array( Package::class, 'secure_storage_dir' ) );
